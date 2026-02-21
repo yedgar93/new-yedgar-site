@@ -1,26 +1,252 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f4f4f46f;
+  --bg-warm: #ede8e36c;
+  --fg: #161718;
+  --fg-muted: #6b6b6b;
+  --fg-dim: #a0a0a0;
+  --accent: #161718;
+  --accent-hover: #3a3a3a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-warm: var(--bg-warm);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-dim: var(--fg-dim);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Base */
+html {
+  scroll-behavior: smooth;
+  background-color: #ffffff;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: transparent;
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: var(--fg);
+  color: var(--bg);
+}
+
+/* Full viewport sections */
+.view-full {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Animations */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fade-in 1s steps(10) ease both;
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 1s steps(10) ease both;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease both;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stagger delays */
+.delay-1 {
+  animation-delay: 0.1s;
+}
+.delay-2 {
+  animation-delay: 0.2s;
+}
+.delay-3 {
+  animation-delay: 0.3s;
+}
+.delay-4 {
+  animation-delay: 0.5s;
+}
+.delay-5 {
+  animation-delay: 0.7s;
+}
+.delay-6 {
+  animation-delay: 0.9s;
+}
+
+/* Subtle grain overlay */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Smooth link underlines */
+.link-underline {
+  position: relative;
+  text-decoration: none;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: currentColor;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}
+
+/* Nav track thumbnails */
+.track-thumb {
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.track-thumb:hover {
+  transform: scale(1.15);
+}
+
+/* Prevent scrolling for specific pages */
+.no-scroll {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+/* Prevent body/html scroll when no-scroll is applied */
+.no-scroll,
+.no-scroll body,
+.no-scroll html {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+/* Alternative: Apply to body when about page is loaded */
+body:has(.about-page) {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+/* White background for light pages (press, contact) so mix-blend-mode: difference works on cursor */
+body:has(.light-page) {
+  background-color: #ffffff;
+}
+
+/* Reduced-graphics mode: hide heavy canvases and show simple placeholders */
+.canvas-placeholder { display: none; }
+body.reduced-graphics .r3f-canvas,
+body.reduced-graphics canvas,
+body.reduced-graphics .three-canvas,
+body.reduced-graphics .react-three-fiber {
+  display: none !important;
+}
+body.reduced-graphics .canvas-placeholder {
+  display: block !important;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background: linear-gradient(180deg,#0b1113 0%, #0f1720 100%);
+}
+
+/* Hide scrollbar on home page */
+body:has(.no-scrollbar) {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body:has(.no-scrollbar)::-webkit-scrollbar {
+  display: none;
+}
+
+html:has(.no-scrollbar) {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html:has(.no-scrollbar)::-webkit-scrollbar {
+  display: none;
 }

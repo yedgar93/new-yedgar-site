@@ -1,0 +1,189 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { releases } from "@/data/releases";
+import { useState, memo, useEffect } from "react";
+import CustomSoundCloudPlayer from "@/components/CustomSoundCloudPlayer";
+import LazyMount from "@/components/LazyMount";
+
+const GrassBackground = memo(
+  dynamic(() => import("@/components/GrassBackground"), { ssr: false }),
+);
+
+export default function MusicPage() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Read URL params on the client to set initial index (avoid using next/navigation during build)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const trackId = params.get("track");
+      if (trackId) {
+        const index = releases.findIndex((r) => r.id === trackId);
+        if (index >= 0) setActiveIndex(index);
+      }
+    } catch (e) {
+      // window may be unavailable during some edge cases; ignore
+    }
+  }, []);
+  const active = releases[activeIndex];
+
+  // Prevent body scroll on this page
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    document.body.style.backgroundColor = "#000000";
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.backgroundColor = "";
+    };
+  }, []);
+
+  return (
+    <main
+      className="view-full overflow-hidden animate-fade-in"
+      style={{ height: "100vh", maxHeight: "100vh" }}
+    >
+      {/* 3D grass background (lazy-mount) */}
+      <LazyMount placeholder={<div className="canvas-placeholder grass-placeholder" />}>
+        <GrassBackground />
+      </LazyMount>
+
+      {/* Center release display */}
+      <div className="relative flex flex-col items-center text-center px-6 z-10">
+        {/* Artwork */}
+        {active.artwork && (
+          <div
+            key={`art-${active.id}`}
+            className="w-48 h-48 md:w-56 md:h-56 rounded-sm overflow-hidden shadow-lg animate-scale-in mb-8"
+          >
+            <img
+              src={active.artwork}
+              alt={active.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Release type label */}
+        <p className="text-[10px] tracking-[0.3em] uppercase text-fg-bright text-gray-200 font-mono animate-fade-in delay-1">
+          {active.type} · {active.releaseDate}
+          {active.tracks ? ` · ${active.tracks} tracks` : ""}
+        </p>
+
+        {/* Title — large */}
+        <h1
+          key={active.id}
+          className="mt-3 text-[clamp(2rem,6vw,4.5rem)] font-bold leading-[0.9] tracking-tight text-fg-bright text-gray-300 animate-scale-in"
+        >
+          {active.title}
+        </h1>
+
+        {/* Label */}
+        {active.label && (
+          <p className="mt-3 text-[11px] tracking-[0.2em] uppercase text-fg-bright text-gray-300 animate-fade-in delay-2">
+            {active.label}
+          </p>
+        )}
+
+        {/* Streaming links */}
+        <div className="mt-8 flex items-center gap-6 animate-scale-in delay-2 text-gray-300 text-fg-bright text-[13px]">
+          {active.spotifyUrl && (
+            <a
+              href={active.spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-fg-bright hover:text-fg"
+            >
+              Spotify
+            </a>
+          )}
+          {active.soundcloudUrl && (
+            <a
+              href={active.soundcloudUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-fg-bright hover:text-fg"
+            >
+              SoundCloud
+            </a>
+          )}
+          {active.bandcampUrl && (
+            <a
+              href={active.bandcampUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-fg-bright hover:text-fg"
+            >
+              Bandcamp
+            </a>
+          )}
+        </div>
+
+        {/* Custom SoundCloud Player */}
+        {active.soundcloudUrl && (
+          <div className="mt-6 w-full max-w-md">
+            <CustomSoundCloudPlayer
+              trackUrl={active.soundcloudUrl}
+              shouldAutoPlay={false}
+            />
+          </div>
+        )}
+
+        {/* Removed SoundCloud embed */}
+      </div>
+
+      {/* Bottom navigation — release thumbnails */}
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 max-w-[90vw]">
+        <div className="flex items-center gap-2 animate-fade-in delay-4 overflow-x-auto pb-2">
+          {releases.map((release, i) => (
+            <button
+              key={release.id}
+              onClick={() => setActiveIndex(i)}
+              className={`group relative shrink-0 w-11 h-11 transition-all duration-300 overflow-hidden cursor-pointer ${
+                i === activeIndex
+                  ? "ring-1 ring-fg/30 scale-110"
+                  : "opacity-40 hover:opacity-80 hover:scale-105"
+              }`}
+              aria-label={release.title}
+            >
+              {release.artwork ? (
+                <img
+                  src={release.artwork}
+                  alt={release.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div
+                  className="w-full h-full flex items-center justify-center"
+                  style={{ backgroundColor: release.color || "#d8d8d8" }}
+                >
+                  <span className="text-white text-[7px] font-bold uppercase tracking-wider opacity-80">
+                    {release.title.slice(0, 2)}
+                  </span>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Track counter */}
+      <div className="absolute top-6 right-6 z-10 animate-fade-in delay-3">
+        <span className="font-mono text-[10px] text-fg tracking-wider">
+          {String(activeIndex + 1).padStart(2, "0")} /{" "}
+          {String(releases.length).padStart(2, "0")}
+        </span>
+      </div>
+
+      <style jsx>{`
+        .soundcloud-embed {
+          margin-top: 1.5rem;
+          max-width: 100%;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+      `}</style>
+    </main>
+  );
+}

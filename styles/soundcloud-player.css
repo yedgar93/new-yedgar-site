@@ -1,0 +1,12 @@
+.custom-soundcloud-player iframe {
+  width: 100%;
+  height: 166px;
+}
+
+.custom-soundcloud-player iframe {
+  pointer-events: none;
+}
+
+.custom-soundcloud-player iframe {
+  background: #000;
+}
