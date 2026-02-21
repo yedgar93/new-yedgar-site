@@ -86,11 +86,16 @@ function proxyUrl(url: string) {
         }
         return url;
       }
-      // Production: if it's a bcbits image, use images.weserv.nl proxy which
-      // adds the necessary CORS headers in responses.
+      // Production: prefer our Netlify Function proxy so we control CORS and
+      // cache headers. Fallback to images.weserv.nl only if the function is
+      // not desired.
       if (url.startsWith("https://f4.bcbits.com/")) {
-        const compact = url.replace(/^https?:\/\//, "");
-        return `https://images.weserv.nl/?url=${encodeURIComponent(compact)}`;
+        try {
+          return `/.netlify/functions/proxy-image?url=${encodeURIComponent(url)}`;
+        } catch (e) {
+          const compact = url.replace(/^https?:\/\//, "");
+          return `https://images.weserv.nl/?url=${encodeURIComponent(compact)}`;
+        }
       }
     }
   } catch (e) {}
@@ -305,18 +310,6 @@ export default function Carousel3D() {
   const [isVisible, setIsVisible] = useState(true);
   const perf = usePerformance();
 
-  // If device is in low-performance mode, render a lightweight placeholder
-  // to avoid mounting the heavy Three.js Canvas and reduce CPU usage.
-  if (perf.isLow) {
-    return (
-      <div
-        ref={containerRef}
-        className="canvas-placeholder carousel-placeholder"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-      />
-    );
-  }
-
   const getDPR = () => {
     try {
       const deviceMemory = (navigator as any).deviceMemory || 4;
@@ -339,6 +332,19 @@ export default function Carousel3D() {
     obs.observe(containerRef.current);
     return () => obs.disconnect();
   }, []);
+
+  // If device is in low-performance mode, render a lightweight placeholder
+  // to avoid mounting the heavy Three.js Canvas and reduce CPU usage.
+  if (perf.isLow) {
+    return (
+      <div
+        ref={containerRef}
+        className="canvas-placeholder carousel-placeholder"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+      />
+    );
+  }
+
 
   return (
     <div ref={containerRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>

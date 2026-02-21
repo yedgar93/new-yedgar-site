@@ -42,6 +42,18 @@ export default function PerformanceGuard() {
       // @ts-ignore
       if ((window as any).__PERF_FORCE_NORMAL) setNormal();
 
+      // Force low-performance mode on mobile / touch devices by default to
+      // avoid mounting heavy WebGL canvases on phones which often have
+      // constrained GPUs and aggressive background throttling.
+      try {
+        const isTouch = typeof window !== "undefined" && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+        const isSmallScreen = typeof window !== "undefined" && Math.min(window.innerWidth, window.innerHeight) <= 768;
+        const prefersCoarse = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        if (isTouch || isSmallScreen || prefersCoarse) {
+          setLow();
+        }
+      } catch (e) {}
+
       const mem = (navigator as any).deviceMemory;
       const hc = (navigator as any).hardwareConcurrency;
       // Be slightly more aggressive for low-power detection
