@@ -321,11 +321,12 @@ function Grass() {
 
 function CameraController() {
   useFrame((state, delta) => {
+    const d = Math.min(delta, 0.06);
     easing.damp3(
       state.camera.position,
       [1 + state.pointer.x * 0.52, 8 + state.pointer.y * 0.45, 25],
       0.3,
-      delta,
+      d,
     );
     state.camera.lookAt(0, 0, 0);
   });
@@ -339,6 +340,7 @@ function CameraController() {
 export default function GrassBackground() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(true);
+  const [isTabVisible, setIsTabVisible] = useState<boolean>(true);
   const perf = usePerformance();
 
   const getDPR = () => {
@@ -364,6 +366,14 @@ export default function GrassBackground() {
     return () => obs.disconnect();
   }, []);
 
+  // Pause rendering when the page/tab is hidden to avoid large delta jumps
+  useEffect(() => {
+    const handle = () => setIsTabVisible(!document.hidden);
+    handle();
+    document.addEventListener("visibilitychange", handle);
+    return () => document.removeEventListener("visibilitychange", handle);
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -380,7 +390,7 @@ export default function GrassBackground() {
       ) : (
         <Canvas
         dpr={perf.isLow ? [1, 1] : getDPR()}
-        frameloop={perf.isLow ? "demand" : isVisible ? "always" : "demand"}
+        frameloop={perf.isLow ? "demand" : isTabVisible && isVisible ? "always" : "demand"}
         camera={{ position: [1, 8, 25], fov: 50 }}
         gl={{
           powerPreference: "low-power",
