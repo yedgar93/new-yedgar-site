@@ -72,17 +72,25 @@ function Ocean({
 }
 
 function proxyUrl(url: string) {
-  // Use the local proxy only during development (localhost).
-  // On platforms like Netlify the Next API route may not be available,
-  // causing the images to fail and appear duplicated — prefer the
-  // direct origin in production.
+  // Use the local proxy during development. In production (Netlify) Next API
+  // routes are not available — for bcbits images, route them through a
+  // CORS-friendly public image proxy (images.weserv.nl) so browsers can load
+  // them as textures without CORS errors.
   try {
     if (typeof window !== "undefined") {
       const host = window.location.hostname;
-      if (host === "localhost" || host === "127.0.0.1") {
+      const isLocal = host === "localhost" || host === "127.0.0.1";
+      if (isLocal) {
         if (url.startsWith("https://f4.bcbits.com/")) {
           return `/api/proxy-image?url=${encodeURIComponent(url)}`;
         }
+        return url;
+      }
+      // Production: if it's a bcbits image, use images.weserv.nl proxy which
+      // adds the necessary CORS headers in responses.
+      if (url.startsWith("https://f4.bcbits.com/")) {
+        const compact = url.replace(/^https?:\/\//, "");
+        return `https://images.weserv.nl/?url=${encodeURIComponent(compact)}`;
       }
     }
   } catch (e) {}
@@ -96,12 +104,20 @@ const sharedSideMaterial = new THREE.MeshBasicMaterial({
 });
 
 function CardMesh({ url, onClick }: { url: string; onClick: (e: any) => void }) {
-  const texture = useTexture(url);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  const faceMaterial = useMemo(
-    () => new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }),
-    [texture],
-  );
+  // Load textures with crossOrigin enabled to avoid CORS issues when the
+  // server supplies proper CORS headers (or when routed through a CORS proxy).
+  const texture = useLoader(THREE.TextureLoader, url, (loader: any) => {
+    try {
+      loader.crossOrigin = "anonymous";
+    } catch (e) {}
+  }) as THREE.Texture;
+  try {
+    texture.colorSpace = THREE.SRGBColorSpace;
+  } catch (e) {}
+  const faceMaterial = useMemo(() => {
+    if (!texture) return new THREE.MeshBasicMaterial({ color: "#333", toneMapped: false });
+    return new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
+  }, [texture]);
   const materials = useMemo(
     () => [
       sharedSideMaterial,
