@@ -250,7 +250,23 @@ function Grass() {
     return geo;
   }, []);
 
-  const customClock = useMemo(() => new THREE.Clock(), []);
+  const customClock = useMemo(() => {
+    // Use the new THREE.Timer when available; fall back to THREE.Clock.
+    try {
+      // @ts-ignore
+      if ((THREE as any).Timer) {
+        // Wrap to provide a stable `getElapsedTime()` API used below.
+        // Some Three.js Timer implementations differ slightly, so guard calls.
+        // @ts-ignore
+        const t = new (THREE as any).Timer();
+        return {
+          getElapsedTime: () => (typeof t.getElapsedTime === "function" ? t.getElapsedTime() : 0),
+        } as { getElapsedTime: () => number };
+      }
+    } catch (e) {}
+    const c = new THREE.Clock();
+    return { getElapsedTime: () => c.getElapsedTime() } as { getElapsedTime: () => number };
+  }, []);
 
   useFrame((_, delta) => {
     if (!materialRef.current) return;

@@ -72,9 +72,20 @@ function Ocean({
 }
 
 function proxyUrl(url: string) {
-  if (url.startsWith("https://f4.bcbits.com/")) {
-    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
-  }
+  // Use the local proxy only during development (localhost).
+  // On platforms like Netlify the Next API route may not be available,
+  // causing the images to fail and appear duplicated — prefer the
+  // direct origin in production.
+  try {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1") {
+        if (url.startsWith("https://f4.bcbits.com/")) {
+          return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+        }
+      }
+    }
+  } catch (e) {}
   return url;
 }
 

@@ -13,28 +13,35 @@ const CustomSoundCloudPlayer = ({
   useEffect(() => {
     if (iframeRef.current) {
       const handleMessage = (event: MessageEvent) => {
-        if (event.origin !== "https://w.soundcloud.com") return;
-        const data = JSON.parse(event.data);
-        if (data.event === "ready" && shouldAutoPlay) {
+        // Only accept messages from the player iframe instance
+        if (!iframeRef.current) return;
+        try {
+          if (event.source !== iframeRef.current.contentWindow) return;
+        } catch (e) {
+          return;
+        }
+
+        // Some messages are plain strings or not JSON — guard parse
+        let data: any = null;
+        try {
+          data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        } catch (err) {
+          return;
+        }
+
+        if (data && data.event === "ready" && shouldAutoPlay) {
           const message = JSON.stringify({ method: "play" });
-          iframeRef.current?.contentWindow?.postMessage(
-            message,
-            "https://w.soundcloud.com",
-          );
+          try {
+            iframeRef.current?.contentWindow?.postMessage(message, "*");
+          } catch (e) {}
         }
       };
 
       window.addEventListener("message", handleMessage);
 
-      // Send a message to the iframe to initialize the player
-      const initMessage = JSON.stringify({
-        method: "addEventListener",
-        events: ["ready"],
-      });
-      iframeRef.current.contentWindow?.postMessage(
-        initMessage,
-        "https://w.soundcloud.com",
-      );
+      // Defer sending init messages until iframe has loaded to avoid cross-origin
+      // "target origin does not match" errors when the iframe is still about:blank.
+      // We'll send the initialization from the onLoad handler below.
 
       return () => {
         window.removeEventListener("message", handleMessage);
@@ -72,7 +79,15 @@ const CustomSoundCloudPlayer = ({
           frameBorder="no"
           allow="autoplay"
           src={embedUrl}
-          onLoad={() => setIsLoaded(true)} // Set loaded state
+            onLoad={() => {
+              setIsLoaded(true);
+              // Initialize the player once the iframe has loaded and the contentWindow
+              // is navigated to the remote origin — posting early can trigger errors.
+              try {
+                const initMessage = JSON.stringify({ method: "addEventListener", events: ["ready"] });
+                iframeRef.current?.contentWindow?.postMessage(initMessage, "*");
+              } catch (e) {}
+            }} // Set loaded state and init player
           style={{
             maxWidth: "600px",
             filter: "grayscale(100%)",
