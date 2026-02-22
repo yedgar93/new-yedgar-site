@@ -145,7 +145,19 @@ function CardMesh({
     return new THREE.MeshLambertMaterial({ map: texture, toneMapped: false });
   }, [texture]);
 
-  faceMaterial.emissive.setHex(active ? 0x555555 : 0x3a3a3a);
+  // Dynamically adjust emissive based on sun cycle
+  // Grey layer fades out whenever the sun is above the horizon, not just at noon
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime * ((Math.PI * 2) / 60);
+    const sunY = Math.sin(t) * 400 + 345; // -55 … 745
+    // sunOut: 0 when sun is below horizon, ramps to 1 quickly as it rises
+    // Using a low threshold (100) so it reaches full brightness early in the day
+    const sunOut = Math.max(0, Math.min(1, sunY / 100));
+    const e = (active ? 0x1a : 0x10) / 255;
+    faceMaterial.emissive.setRGB(e, e, e);
+    // Full grey (0.4) at night → near-zero (0.05) whenever sun is out
+    faceMaterial.emissiveIntensity = 0.4 - sunOut * 0.35;
+  });
 
   const materials = useMemo(
     () => [
@@ -235,6 +247,24 @@ function ActiveCard({
     : "";
   return (
     <Billboard>
+      {/* Outer outline layer (rendered behind) */}
+      <Text
+        font="/Roboto-Thin.ttf"
+        fontSize={isMobile ? 0.28 : 0.3}
+        position={isMobile ? [0, -0.3, -0.01] : [2.15, 2.65, -0.01]}
+        anchorX={isMobile ? "center" : "left"}
+        anchorY={isMobile ? "top" : undefined}
+        textAlign={isMobile ? "center" : undefined}
+        color="#000000a6"
+        outlineWidth={0.025}
+        outlineColor="black"
+        outlineOpacity={0.1}
+        lineHeight={1.4}
+        letterSpacing={0.15}
+      >
+        {hovered !== null ? label.toUpperCase() : ""}
+      </Text>
+      {/* Main text with inner outline */}
       <Text
         font="/Roboto-Thin.ttf"
         fontSize={isMobile ? 0.28 : 0.3}
@@ -243,6 +273,9 @@ function ActiveCard({
         anchorY={isMobile ? "top" : undefined}
         textAlign={isMobile ? "center" : undefined}
         color="white"
+        outlineWidth={0.012}
+        outlineColor="black"
+        outlineOpacity={0.12}
         lineHeight={1.4}
         letterSpacing={0.15}
         onClick={onClick}
@@ -463,9 +496,9 @@ function AnimatedSky() {
         ref={skyRef}
         sunPosition={[3500, 300, -1000]}
         turbidity={0.08}
-        rayleigh={0.051231401125}
+        rayleigh={0.03451231401125}
         mieCoefficient={0}
-        mieDirectionalG={3.1495}
+        mieDirectionalG={0.31495}
       />
     </>
   );
