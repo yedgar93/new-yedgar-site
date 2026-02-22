@@ -18,12 +18,16 @@ export default function Home() {
       {/* <OceanBackground /> */}
 
       {/* 3D Carousel — fills entire viewport (lazy-mount) */}
-      <LazyMount placeholder={<div className="canvas-placeholder carousel-placeholder" />}>
+      <LazyMount
+        placeholder={
+          <div className="canvas-placeholder carousel-placeholder" />
+        }
+      >
         <Carousel3D />
       </LazyMount>
 
       {/* Overlay: Artist name bottom-left */}
-      <div className="absolute bottom-24 left-10 z-10 pointer-events-none animate-fade-in">
+      <div className="absolute bottom-20 md:bottom-24 left-6 md:left-10 z-10 pointer-events-none animate-fade-in">
         {/* <h1 className="text-[clamp(2rem,6vw,5rem)] font-bold leading-[0.85] tracking-tighter text-fg/80">
           YEDGAR
         </h1> */}
@@ -34,9 +38,12 @@ export default function Home() {
       </div>
 
       {/* Overlay: Scroll hint bottom-center */}
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 pointer-events-none animate-fade-in delay-4">
-        <p className="text-[8px] tracking-[-0.05em] uppercase text-fg-dim font-mono">
+      <div className="absolute bottom-16 md:bottom-24 left-1/2 -translate-x-1/2 z-10 pointer-events-none animate-fade-in delay-4">
+        <p className="hidden md:block text-[10px] tracking-[-0.05em] uppercase text-fg-dim font-mono">
           Scroll up & down to rotate · Click to listen
+        </p>
+        <p className="block md:hidden text-[10px] tracking-[-0.05em] uppercase text-fg-dim font-mono">
+          Swipe to browse · Tap to listen
         </p>
       </div>
     </main>

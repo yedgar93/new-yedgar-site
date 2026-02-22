@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { releases } from "@/data/releases";
-import { useState, memo, useEffect } from "react";
+import { useState, memo, useEffect, useRef, useCallback } from "react";
 import CustomSoundCloudPlayer from "@/components/CustomSoundCloudPlayer";
 import LazyMount from "@/components/LazyMount";
 
@@ -27,6 +27,49 @@ export default function MusicPage() {
     }
   }, []);
   const active = releases[activeIndex];
+  const n = releases.length;
+
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+      const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+      touchStartRef.current = null;
+
+      if (Math.abs(deltaX) > 80 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+        if (deltaX < 0) {
+          setActiveIndex((prev) => (prev + 1) % n);
+        } else {
+          setActiveIndex((prev) => (prev - 1 + n) % n);
+        }
+      }
+    },
+    [n],
+  );
+
+  // Arrow key navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        setActiveIndex((prev) => (prev + 1) % n);
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        setActiveIndex((prev) => (prev - 1 + n) % n);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [n]);
+
+  const progress = n > 1 ? activeIndex / (n - 1) : 0;
 
   // Prevent body scroll on this page
   useEffect(() => {
@@ -40,21 +83,25 @@ export default function MusicPage() {
 
   return (
     <main
-      className="view-full overflow-hidden animate-fade-in"
-      style={{ height: "100vh", maxHeight: "100vh" }}
+      className="view-full overflow-hidden animate-fade-in no-scrollbar"
+      style={{ height: "100dvh", maxHeight: "100dvh", touchAction: "none" }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* 3D grass background (lazy-mount) */}
-      <LazyMount placeholder={<div className="canvas-placeholder grass-placeholder" />}>
-        <GrassBackground />
+      <LazyMount
+        placeholder={<div className="canvas-placeholder grass-placeholder" />}
+      >
+        <GrassBackground progress={progress} />
       </LazyMount>
 
       {/* Center release display */}
-      <div className="relative flex flex-col items-center text-center px-6 z-10">
+      <div className="relative flex flex-col items-center text-center px-4 md:px-6 z-10">
         {/* Artwork */}
         {active.artwork && (
           <div
             key={`art-${active.id}`}
-            className="w-48 h-48 md:w-56 md:h-56 rounded-sm overflow-hidden shadow-lg animate-scale-in mb-8"
+            className="w-36 h-36 md:w-56 md:h-56 rounded-sm overflow-hidden shadow-lg animate-scale-in mb-4 md:mb-8"
           >
             <img
               src={active.artwork}
@@ -73,7 +120,7 @@ export default function MusicPage() {
         {/* Title — large */}
         <h1
           key={active.id}
-          className="mt-3 text-[clamp(2rem,6vw,4.5rem)] font-bold leading-[0.9] tracking-tight text-fg-bright text-gray-300 animate-scale-in"
+          className="mt-2 md:mt-3 text-[clamp(1.5rem,6vw,4.5rem)] font-bold leading-[0.9] tracking-tight text-fg-bright text-gray-300 animate-scale-in"
         >
           {active.title}
         </h1>
@@ -86,7 +133,7 @@ export default function MusicPage() {
         )}
 
         {/* Streaming links */}
-        <div className="mt-8 flex items-center gap-6 animate-scale-in delay-2 text-gray-300 text-fg-bright text-[13px]">
+        <div className="mt-5 md:mt-8 flex items-center gap-4 md:gap-6 animate-scale-in delay-2 text-gray-300 text-fg-bright text-[13px]">
           {active.spotifyUrl && (
             <a
               href={active.spotifyUrl}
@@ -121,7 +168,7 @@ export default function MusicPage() {
 
         {/* Custom SoundCloud Player */}
         {active.soundcloudUrl && (
-          <div className="mt-6 w-full max-w-md">
+          <div className="mt-4 md:mt-6 w-full max-w-sm md:max-w-md">
             <CustomSoundCloudPlayer
               trackUrl={active.soundcloudUrl}
               shouldAutoPlay={false}
@@ -133,13 +180,13 @@ export default function MusicPage() {
       </div>
 
       {/* Bottom navigation — release thumbnails */}
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 max-w-[90vw]">
-        <div className="flex items-center gap-2 animate-fade-in delay-4 overflow-x-auto pb-2">
+      <div className="absolute bottom-12 md:bottom-16 left-1/2 -translate-x-1/2 z-10 max-w-[98vw]">
+        <div className="flex items-center gap-1.5 md:gap-2 animate-fade-in delay-4 overflow-x-auto pb-2">
           {releases.map((release, i) => (
             <button
               key={release.id}
               onClick={() => setActiveIndex(i)}
-              className={`group relative shrink-0 w-11 h-11 transition-all duration-300 overflow-hidden cursor-pointer ${
+              className={`group relative shrink-0 w-9 h-9 md:w-11 md:h-11 transition-all duration-300 overflow-hidden cursor-pointer ${
                 i === activeIndex
                   ? "ring-1 ring-fg/30 scale-110"
                   : "opacity-40 hover:opacity-80 hover:scale-105"
@@ -168,7 +215,7 @@ export default function MusicPage() {
       </div>
 
       {/* Track counter */}
-      <div className="absolute top-6 right-6 z-10 animate-fade-in delay-3">
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-10 animate-fade-in delay-3">
         <span className="font-mono text-[10px] text-fg tracking-wider">
           {String(activeIndex + 1).padStart(2, "0")} /{" "}
           {String(releases.length).padStart(2, "0")}

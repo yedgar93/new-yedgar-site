@@ -5,8 +5,7 @@
 // Optimised as a non-interactive background effect
 
 import * as THREE from "three";
-import { useRef, useMemo, Suspense, useState, useEffect } from "react";
-import { usePerformance } from "./usePerformance";
+import { useRef, useMemo, memo, Suspense, useState, useEffect } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
 import { easing } from "maath";
@@ -213,17 +212,18 @@ const BLADE_JOINTS = 5;
 const INSTANCES = 45000; // reduced from 50 000 for perf
 const FIELD_WIDTH = 121; // Increase the field width to ensure it extends off-screen horizontally
 
-function Grass() {
+const Grass = memo(function Grass() {
   const materialRef = useRef<THREE.RawShaderMaterial>(null);
-  const perf = usePerformance();
 
   const [texture, alphaMap] = useLoader(THREE.TextureLoader, [
     "/blade_diffuse.jpg",
     "/blade_alpha.jpg",
   ]);
 
-  const instances = perf.isLow ? Math.max(10000, Math.floor(INSTANCES * 0.25)) : INSTANCES;
-  const attributeData = useMemo(() => getAttributeData(instances, FIELD_WIDTH), [instances]);
+  const attributeData = useMemo(
+    () => getAttributeData(INSTANCES, FIELD_WIDTH),
+    [],
+  );
 
   const baseGeometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(
@@ -251,20 +251,32 @@ function Grass() {
   }, []);
 
   const customClock = useMemo(() => {
-    // Use a simple performance-based clock to ensure a steadily-increasing
-    // elapsed time value across environments (avoids differences between
-    // THREE.Timer/THREE.Clock implementations).
-    const start = typeof performance !== "undefined" ? performance.now() : Date.now();
-    return { getElapsedTime: () => ((typeof performance !== "undefined" ? performance.now() : Date.now()) - start) / 1000 } as {
+    const start =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+    return {
+      getElapsedTime: () =>
+        ((typeof performance !== "undefined" ? performance.now() : Date.now()) -
+          start) /
+        1000,
+    } as {
       getElapsedTime: () => number;
     };
   }, []);
 
-  useFrame((_, delta) => {
-    if (!materialRef.current) return;
-    // Slow down animation when in low-power mode
-    const timeFactor = perf.isLow ? 8 : 4;
-    materialRef.current.uniforms.time.value = customClock.getElapsedTime() / timeFactor;
+  const uniforms = useMemo(
+    () => ({
+      map: { value: texture },
+      alphaMap: { value: alphaMap },
+      time: { value: 0 },
+    }),
+    [texture, alphaMap],
+  );
+
+  useFrame(() => {
+    if (materialRef.current) {
+      materialRef.current.uniforms.time.value =
+        customClock.getElapsedTime() / 4;
+    }
   });
 
   return (
@@ -298,11 +310,7 @@ function Grass() {
         </instancedBufferGeometry>
         <rawShaderMaterial
           ref={materialRef}
-          uniforms={{
-            map: { value: texture },
-            alphaMap: { value: alphaMap },
-            time: { value: 0 },
-          }}
+          uniforms={uniforms}
           vertexShader={getVertexSource(BLADE_HEIGHT)}
           fragmentShader={fragmentSource}
           side={THREE.DoubleSide}
@@ -313,7 +321,7 @@ function Grass() {
       </mesh>
     </group>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /*  Camera Controller for mouse following                             */
@@ -334,27 +342,65 @@ function CameraController() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Animated sky + light that smoothly tracks progress                 */
+/* ------------------------------------------------------------------ */
+
+function AnimatedEnvironment({
+  targetSunY,
+  targetLightIntensity,
+}: {
+  targetSunY: number;
+  targetLightIntensity: number;
+}) {
+  const skyRef = useRef<any>(null);
+  const lightRef = useRef<any>(null);
+  const current = useRef({ sunY: targetSunY, intensity: targetLightIntensity });
+
+  useFrame((_state, delta) => {
+    const d = Math.min(delta, 0.06);
+    easing.damp(current.current, "sunY", targetSunY, 0.4, d);
+    easing.damp(current.current, "intensity", targetLightIntensity, 0.4, d);
+
+    if (skyRef.current?.material?.uniforms?.sunPosition) {
+      skyRef.current.material.uniforms.sunPosition.value.set(
+        0,
+        current.current.sunY,
+        -1000,
+      );
+    }
+    if (lightRef.current) {
+      lightRef.current.intensity = current.current.intensity;
+    }
+  });
+
+  return (
+    <>
+      <ambientLight ref={lightRef} intensity={targetLightIntensity} />
+      <Sky
+        ref={skyRef}
+        sunPosition={[0, targetSunY, -1000]}
+        turbidity={100}
+        rayleigh={0.97}
+      />
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Exported background component                                      */
 /* ------------------------------------------------------------------ */
 
-export default function GrassBackground() {
+export default function GrassBackground({
+  progress = 0,
+}: {
+  progress?: number;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const [isTabVisible, setIsTabVisible] = useState<boolean>(true);
-  const perf = usePerformance();
 
-  const getDPR = () => {
-    try {
-      const deviceMemory = (navigator as any).deviceMemory || 4;
-      const hc = (navigator as any).hardwareConcurrency || 4;
-      const DPR = window.devicePixelRatio || 1;
-      if (deviceMemory <= 1 || hc <= 2) return [1, 1] as any;
-      if (DPR > 2) return [1, 1.5] as any;
-      return [1, DPR] as any;
-    } catch (e) {
-      return [1, 1.5] as any;
-    }
-  };
+  const sunY = 10 - progress * 55;
+  const lightIntensity = 1.5 - progress * 1.48;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -385,12 +431,9 @@ export default function GrassBackground() {
         zIndex: 0,
       }}
     >
-      {perf.isLow ? (
-        <div className="canvas-placeholder" aria-hidden="true" />
-      ) : (
-        <Canvas
-        dpr={perf.isLow ? [1, 1] : getDPR()}
-        frameloop={perf.isLow ? "demand" : isTabVisible && isVisible ? "always" : "demand"}
+      <Canvas
+        dpr={[1, 1.5]}
+        frameloop={isTabVisible && isVisible ? "always" : "demand"}
         camera={{ position: [1, 8, 25], fov: 50 }}
         gl={{
           powerPreference: "low-power",
@@ -401,16 +444,16 @@ export default function GrassBackground() {
           gl.outputColorSpace = THREE.SRGBColorSpace;
         }}
       >
-        <ambientLight intensity={1.5} />
         <pointLight position={[10, 10, 90]} intensity={0.125} />
         <Suspense fallback={null}>
           <CameraController />
           <Grass />
-          <Sky sunPosition={[0, 10, -1000]} turbidity={100} rayleigh={0.97} />
+          <AnimatedEnvironment
+            targetSunY={sunY}
+            targetLightIntensity={lightIntensity}
+          />
         </Suspense>
       </Canvas>
-      )}
-
       <div
         style={{
           position: "absolute",
@@ -418,115 +461,11 @@ export default function GrassBackground() {
           left: 0,
           width: "100%",
           height: "100%",
-          backgroundColor: "rgba(79, 74, 87, 0.45)",
+          backgroundColor: "rgba(79, 74, 87, 0.175)",
           zIndex: 1,
           pointerEvents: "none",
         }}
       />
     </div>
   );
-}
-
-function computeAttributeData() {
-  const offsets: number[] = [];
-  const orientations: number[] = [];
-  const stretches: number[] = [];
-  const halfRootAngleSin: number[] = [];
-  const halfRootAngleCos: number[] = [];
-
-  let quaternion_0 = new THREE.Vector4();
-  let quaternion_1 = new THREE.Vector4();
-
-  const min = -0.25;
-  const max = 0.25;
-
-  for (let i = 0; i < INSTANCES; i++) {
-    const offsetX = Math.random() * FIELD_WIDTH - FIELD_WIDTH / 2;
-    const offsetZ = Math.random() * FIELD_WIDTH - FIELD_WIDTH / 2;
-    const offsetY = getYPosition(offsetX, offsetZ);
-    offsets.push(offsetX, offsetY, offsetZ);
-
-    // Random Y rotation
-    let angle = Math.PI - Math.random() * (2 * Math.PI);
-    halfRootAngleSin.push(Math.sin(0.5 * angle));
-    halfRootAngleCos.push(Math.cos(0.5 * angle));
-
-    let axis = new THREE.Vector3(0, 1, 0);
-    quaternion_0
-      .set(
-        axis.x * Math.sin(angle / 2),
-        axis.y * Math.sin(angle / 2),
-        axis.z * Math.sin(angle / 2),
-        Math.cos(angle / 2),
-      )
-      .normalize();
-
-    // Random X rotation
-    angle = Math.random() * (max - min) + min;
-    axis = new THREE.Vector3(1, 0, 0);
-    quaternion_1
-      .set(
-        axis.x * Math.sin(angle / 2),
-        axis.y * Math.sin(angle / 2),
-        axis.z * Math.sin(angle / 2),
-        Math.cos(angle / 2),
-      )
-      .normalize();
-    quaternion_0 = multiplyQuaternions(quaternion_0, quaternion_1);
-
-    // Random Z rotation
-    angle = Math.random() * (max - min) + min;
-    axis = new THREE.Vector3(0, 0, 1);
-    quaternion_1
-      .set(
-        axis.x * Math.sin(angle / 2),
-        axis.y * Math.sin(angle / 2),
-        axis.z * Math.sin(angle / 2),
-        Math.cos(angle / 2),
-      )
-      .normalize();
-    quaternion_0 = multiplyQuaternions(quaternion_0, quaternion_1);
-
-    orientations.push(
-      quaternion_0.x,
-      quaternion_0.y,
-      quaternion_0.z,
-      quaternion_0.w,
-    );
-
-    stretches.push(i < INSTANCES / 3 ? Math.random() * 1.8 : Math.random());
-  }
-
-  return {
-    offsets: new Float32Array(offsets),
-    orientations: new Float32Array(orientations),
-    stretches: new Float32Array(stretches),
-    halfRootAngleCos: new Float32Array(halfRootAngleCos),
-    halfRootAngleSin: new Float32Array(halfRootAngleSin),
-  };
-}
-
-function computeBaseGeometry() {
-  const geo = new THREE.PlaneGeometry(
-    BLADE_WIDTH,
-    BLADE_HEIGHT,
-    1,
-    BLADE_JOINTS,
-  );
-  geo.translate(0, BLADE_HEIGHT / 2, 0);
-  return geo;
-}
-
-function computeGroundGeometry() {
-  const geo = new THREE.PlaneGeometry(FIELD_WIDTH, FIELD_WIDTH, 32, 32);
-  geo.rotateX(-Math.PI / 2);
-  const pos = geo.getAttribute("position");
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const z = pos.getZ(i);
-    pos.setY(i, getYPosition(x, z));
-  }
-  pos.needsUpdate = true;
-  geo.computeVertexNormals();
-  return geo;
 }

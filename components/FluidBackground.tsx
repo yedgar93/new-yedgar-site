@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePerformance } from "./usePerformance";
 
 interface Particle {
   x: number;
@@ -14,7 +13,6 @@ interface Particle {
 
 export default function FluidBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const perf = usePerformance();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -24,7 +22,7 @@ export default function FluidBackground() {
     if (!ctx) return;
 
     // Set canvas size with devicePixelRatio scaling and throttle resize
-    const dpr = Math.min(window.devicePixelRatio || 1, Math.max(1, perf.dpr || 1.5));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let resizeTimeout: number | null = null;
     const setCanvasSize = () => {
       // Backing store pixels
@@ -48,9 +46,7 @@ export default function FluidBackground() {
 
     // Particle system
     const particles: Particle[] = [];
-    // Adapt particle count based on performance
-    let particleCount = 40;
-    if (perf.isLow) particleCount = 16;
+    const particleCount = 40;
 
     // Initialize particles
     const initParticles = () => {
@@ -89,15 +85,7 @@ export default function FluidBackground() {
 
     let animationId: number;
 
-    // Frame-skipping when in low-power mode
-    let frameCounter = 0;
     const render = () => {
-      frameCounter++;
-      const skip = perf.isLow ? 1 : 0; // skip every other frame when low
-      if (skip && frameCounter % (skip + 1) !== 0) {
-        animationId = requestAnimationFrame(render);
-        return;
-      }
       // Clear to white background
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -186,7 +174,7 @@ export default function FluidBackground() {
       if (resizeTimeout) window.clearTimeout(resizeTimeout);
       cancelAnimationFrame(animationId);
     };
-  }, [perf.isLow, perf.dpr]);
+  }, []);
 
   return (
     <canvas

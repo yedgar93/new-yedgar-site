@@ -48,12 +48,15 @@ export default function Nav() {
   return (
     <>
       {/* Top logo */}
-      <header className="fixed top-0 left-0 z-50 w-full flex justify-center py-6 pointer-events-none">
+      <header
+        className="fixed top-0 left-0 z-50 w-full flex justify-center py-4 md:py-6 pointer-events-none"
+        style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
+      >
         <Link href="/" className="pointer-events-auto">
           <img
             src={shouldUseWhiteLogo ? "/logo-wht.png" : "/logo-blk.png"}
             alt="Yedgar Logo"
-            className={`h-22 mt-2 object-contain animate-fade-in ${
+            className={`h-14 md:h-22 mt-1 md:mt-2 object-contain animate-fade-in ${
               isInitialLoad ? "opacity-0" : "opacity-100"
             }`}
             style={{ opacity: logoOpacity }}
@@ -62,8 +65,11 @@ export default function Nav() {
       </header>
 
       {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 z-50 w-full flex justify-center pb-8 pointer-events-none">
-        <div className="flex items-center gap-8 pointer-events-auto animate-fade-in delay-4">
+      <nav
+        className="fixed bottom-0 left-0 z-50 w-full flex justify-center pb-5 md:pb-8 pointer-events-none"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.25rem)" }}
+      >
+        <div className="flex items-center gap-4 md:gap-8 pointer-events-auto animate-fade-in delay-4">
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (

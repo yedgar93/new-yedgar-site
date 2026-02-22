@@ -24,7 +24,10 @@ const CustomSoundCloudPlayer = ({
         // Some messages are plain strings or not JSON — guard parse
         let data: any = null;
         try {
-          data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+          data =
+            typeof event.data === "string"
+              ? JSON.parse(event.data)
+              : event.data;
         } catch (err) {
           return;
         }
@@ -73,21 +76,24 @@ const CustomSoundCloudPlayer = ({
       >
         <iframe
           ref={iframeRef}
-          width="350px"
+          width="100%"
           height="20"
           scrolling="no"
           frameBorder="no"
           allow="autoplay"
           src={embedUrl}
-            onLoad={() => {
-              setIsLoaded(true);
-              // Initialize the player once the iframe has loaded and the contentWindow
-              // is navigated to the remote origin — posting early can trigger errors.
-              try {
-                const initMessage = JSON.stringify({ method: "addEventListener", events: ["ready"] });
-                iframeRef.current?.contentWindow?.postMessage(initMessage, "*");
-              } catch (e) {}
-            }} // Set loaded state and init player
+          onLoad={() => {
+            setIsLoaded(true);
+            // Initialize the player once the iframe has loaded and the contentWindow
+            // is navigated to the remote origin — posting early can trigger errors.
+            try {
+              const initMessage = JSON.stringify({
+                method: "addEventListener",
+                events: ["ready"],
+              });
+              iframeRef.current?.contentWindow?.postMessage(initMessage, "*");
+            } catch (e) {}
+          }} // Set loaded state and init player
           style={{
             maxWidth: "600px",
             filter: "grayscale(100%)",

@@ -25,6 +25,12 @@
 /* Base */
 html {
   scroll-behavior: smooth;
+  background-color: #000000;
+  overscroll-behavior: none;
+}
+
+/* Light pages get white html background */
+html:has(.light-page) {
   background-color: #ffffff;
 }
 
@@ -35,6 +41,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  overscroll-behavior: none;
 }
 
 ::selection {
@@ -189,8 +196,8 @@ body {
 /* Prevent scrolling for specific pages */
 .no-scroll {
   overflow: hidden !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
 }
 
 /* Prevent body/html scroll when no-scroll is applied */
@@ -198,38 +205,15 @@ body {
 .no-scroll body,
 .no-scroll html {
   overflow: hidden !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
 }
 
 /* Alternative: Apply to body when about page is loaded */
 body:has(.about-page) {
   overflow: hidden !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
-}
-
-/* White background for light pages (press, contact) so mix-blend-mode: difference works on cursor */
-body:has(.light-page) {
-  background-color: #ffffff;
-}
-
-/* Reduced-graphics mode: hide heavy canvases and show simple placeholders */
-.canvas-placeholder { display: none; }
-body.reduced-graphics .r3f-canvas,
-body.reduced-graphics canvas,
-body.reduced-graphics .three-canvas,
-body.reduced-graphics .react-three-fiber {
-  display: none !important;
-}
-body.reduced-graphics .canvas-placeholder {
-  display: block !important;
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  background: linear-gradient(180deg,#0b1113 0%, #0f1720 100%);
+  height: 100dvh !important;
+  max-height: 100dvh !important;
 }
 
 /* Hide scrollbar on home page */

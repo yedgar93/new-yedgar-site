@@ -1,15 +1,20 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePerformance } from "./usePerformance";
 
 export default function CustomCursor() {
   const cursorRef = useRef<HTMLDivElement>(null);
-  const perf = usePerformance();
 
   useEffect(() => {
     const cursor = cursorRef.current;
     if (!cursor) return;
+
+    // Don't show custom cursor on touch devices
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+    if (isTouch) {
+      cursor.style.display = "none";
+      return;
+    }
 
     const mouse = { x: -200, y: -200 };
     const pos = { x: -200, y: -200 };
@@ -95,8 +100,6 @@ export default function CustomCursor() {
       cursor.style.width = `${size}px`;
       cursor.style.height = `${size}px`;
 
-      // Use a lower-frequency update loop on low-power mode to save CPU
-      if (perf.isLow) return; // when using interval, don't queue another RAF
       raf = requestAnimationFrame(animate);
     };
 
@@ -106,13 +109,7 @@ export default function CustomCursor() {
     document.addEventListener("mouseover", onMouseOver);
     document.addEventListener("mouseout", onMouseOut);
 
-    let intervalId: number | null = null;
-    if (perf.isLow) {
-      // Run at ~15 FPS with setInterval
-      intervalId = window.setInterval(animate, 66) as unknown as number;
-    } else {
-      raf = requestAnimationFrame(animate);
-    }
+    raf = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
@@ -121,10 +118,9 @@ export default function CustomCursor() {
       document.removeEventListener("mouseover", onMouseOver);
       document.removeEventListener("mouseout", onMouseOut);
       cancelAnimationFrame(raf);
-      if (intervalId) window.clearInterval(intervalId);
       document.head.removeChild(style);
     };
-  }, [perf.isLow]);
+  }, []);
 
   return (
     <div
