@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import LazyMount from "@/components/LazyMount";
+import { useState, useEffect } from "react";
 
 const Carousel3D = dynamic(() => import("@/components/Carousel3D"), {
   ssr: false,
@@ -12,8 +13,23 @@ const Carousel3D = dynamic(() => import("@/components/Carousel3D"), {
 // });
 
 export default function Home() {
+  const [isLoaded, setIsLoaded] = useState(false); // New state to track loading
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setIsLoaded(true); // Set loaded state after a short delay
+    }, 500); // Adjust delay as needed
+
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
-    <main className="view-full relative overflow-hidden animate-fade-in">
+    <div
+      style={{
+        opacity: isLoaded ? 1 : 0, // Fade in the entire page
+        transition: "opacity 1s ease-in-out", // Smooth transition
+      }}
+    >
       {/* Ocean water shader background */}
       {/* <OceanBackground /> */}
 
@@ -46,6 +62,6 @@ export default function Home() {
           Swipe to browse · Tap to listen
         </p>
       </div>
-    </main>
+    </div>
   );
 }

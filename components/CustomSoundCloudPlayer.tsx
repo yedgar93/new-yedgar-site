@@ -11,6 +11,7 @@ const CustomSoundCloudPlayer = ({
   const [isLoaded, setIsLoaded] = useState(false); // Track iframe loading state
 
   useEffect(() => {
+    setIsLoaded(false); // Reset loading state whenever trackUrl changes
     if (iframeRef.current) {
       const handleMessage = (event: MessageEvent) => {
         // Only accept messages from the player iframe instance
@@ -41,10 +42,6 @@ const CustomSoundCloudPlayer = ({
       };
 
       window.addEventListener("message", handleMessage);
-
-      // Defer sending init messages until iframe has loaded to avoid cross-origin
-      // "target origin does not match" errors when the iframe is still about:blank.
-      // We'll send the initialization from the onLoad handler below.
 
       return () => {
         window.removeEventListener("message", handleMessage);
@@ -84,20 +81,24 @@ const CustomSoundCloudPlayer = ({
           src={embedUrl}
           onLoad={() => {
             setIsLoaded(true);
-            // Initialize the player once the iframe has loaded and the contentWindow
-            // is navigated to the remote origin — posting early can trigger errors.
-            try {
-              const initMessage = JSON.stringify({
-                method: "addEventListener",
-                events: ["ready"],
-              });
-              iframeRef.current?.contentWindow?.postMessage(initMessage, "*");
-            } catch (e) {}
-          }} // Set loaded state and init player
+            const sendInit = (attempt = 0) => {
+              try {
+                const initMessage = JSON.stringify({
+                  method: "addEventListener",
+                  events: ["ready"],
+                });
+                iframeRef.current?.contentWindow?.postMessage(initMessage, "*");
+              } catch (e) {}
+              if (attempt < 3) {
+                setTimeout(() => sendInit(attempt + 1), 500);
+              }
+            };
+            setTimeout(() => sendInit(), 300);
+          }}
           style={{
             maxWidth: "600px",
             filter: "grayscale(100%)",
-            opacity: isLoaded ? 0.675 : 0, // Hide until loaded
+            opacity: isLoaded ? 1 : 0, // Ensure it fades in only when loaded
             transition: "opacity 0.5s ease", // Smooth fade-in
           }}
         ></iframe>

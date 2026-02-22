@@ -42,6 +42,9 @@ declare module "@react-three/fiber" {
 
 const cardList = releases.filter((r) => r.artwork);
 
+// Shared ref so CursorSun can update the water's sunDirection for reflections
+const waterMeshRef: { current: any } = { current: null };
+
 function Ocean({
   waterColor = 0x001e0f,
   sunColor = 0xffffff,
@@ -77,6 +80,14 @@ function Ocean({
     if (ref.current) {
       ref.current.material.uniforms.time.value += delta * 0.5;
     }
+  });
+
+  // Expose water mesh for cursor reflection
+  useEffect(() => {
+    waterMeshRef.current = ref.current;
+    return () => {
+      waterMeshRef.current = null;
+    };
   });
 
   return <water ref={ref} args={[geom, config]} rotation-x={-Math.PI / 2} />;
@@ -145,18 +156,26 @@ function CardMesh({
     return new THREE.MeshLambertMaterial({ map: texture, toneMapped: false });
   }, [texture]);
 
+  const duplicateMaterial = useMemo(() => {
+    if (!texture)
+      return new THREE.MeshBasicMaterial({
+        color: "#333",
+        toneMapped: false,
+      });
+    return new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
+  }, [texture]);
+
   // Dynamically adjust emissive based on sun cycle
-  // Grey layer fades out whenever the sun is above the horizon, not just at noon
+  // Cards should look natural in daylight and simply darken at night (not grey)
   useFrame(({ clock }) => {
     const t = clock.elapsedTime * ((Math.PI * 2) / 60);
     const sunY = Math.sin(t) * 400 + 345; // -55 … 745
-    // sunOut: 0 when sun is below horizon, ramps to 1 quickly as it rises
-    // Using a low threshold (100) so it reaches full brightness early in the day
     const sunOut = Math.max(0, Math.min(1, sunY / 100));
     const e = (active ? 0x1a : 0x10) / 255;
     faceMaterial.emissive.setRGB(e, e, e);
-    // Full grey (0.4) at night → near-zero (0.05) whenever sun is out
-    faceMaterial.emissiveIntensity = 0.4 - sunOut * 0.35;
+    faceMaterial.emissiveIntensity = 0.2 + sunOut * 0.005; // Reduced sunOut impact to half
+    faceMaterial.transparent = true;
+    faceMaterial.opacity = 0.5; // Set original cards to 50% opacity
   });
 
   const materials = useMemo(
@@ -170,8 +189,30 @@ function CardMesh({
     ],
     [faceMaterial],
   );
+
+  const duplicateMaterials = useMemo(
+    () => [
+      sharedSideMaterial,
+      sharedSideMaterial,
+      sharedSideMaterial,
+      sharedSideMaterial,
+      duplicateMaterial,
+      duplicateMaterial,
+    ],
+    [duplicateMaterial],
+  );
+
   return (
-    <mesh geometry={sharedBoxGeometry} material={materials} onClick={onClick} />
+    <>
+      {/* Original card affected by lighting */}
+      <mesh
+        geometry={sharedBoxGeometry}
+        material={materials}
+        onClick={onClick}
+      />
+      {/* Duplicate card unaffected by lighting */}
+      <mesh geometry={sharedBoxGeometry} material={duplicateMaterials} />
+    </>
   );
 }
 
@@ -255,8 +296,8 @@ function ActiveCard({
         anchorX={isMobile ? "center" : "left"}
         anchorY={isMobile ? "top" : undefined}
         textAlign={isMobile ? "center" : undefined}
-        color="#000000a6"
-        outlineWidth={0.025}
+        color="#white"
+        outlineWidth={0.035}
         outlineColor="black"
         outlineOpacity={0.1}
         lineHeight={1.4}
@@ -273,8 +314,8 @@ function ActiveCard({
         anchorY={isMobile ? "top" : undefined}
         textAlign={isMobile ? "center" : undefined}
         color="white"
-        outlineWidth={0.012}
-        outlineColor="black"
+        outlineWidth={0.015}
+        outlineColor="white"
         outlineOpacity={0.12}
         lineHeight={1.4}
         letterSpacing={0.15}
@@ -471,21 +512,139 @@ function MobileScene({
   );
 }
 
+const _cursorWorldPos = new THREE.Vector3();
+const _sunDir = new THREE.Vector3();
+const _raycaster = new THREE.Raycaster();
+const _pointerNDC = new THREE.Vector2();
+const _waterPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.75); // card level y=1.75
+
+function CursorSun() {
+  const lightRef = useRef<any>(null);
+  const meshRef = useRef<any>(null);
+
+  useFrame((state) => {
+    // Raycast from camera through pointer onto a plane at card height (y=1.75)
+    _pointerNDC.set(state.pointer.x, state.pointer.y);
+    _raycaster.setFromCamera(_pointerNDC, state.camera);
+    const hit = _raycaster.ray.intersectPlane(_waterPlane, _cursorWorldPos);
+
+    if (hit) {
+      // Clamp distance so it doesn't fly off to infinity at shallow angles
+      const maxDist = 50;
+      const dist = _cursorWorldPos.length();
+      if (dist > maxDist) _cursorWorldPos.multiplyScalar(maxDist / dist);
+
+      if (lightRef.current) {
+        lightRef.current.position.copy(_cursorWorldPos);
+        lightRef.current.position.y += 1; // lift light above cards so it illuminates from above
+      }
+      if (meshRef.current) {
+        meshRef.current.position.copy(_cursorWorldPos);
+      }
+
+      // Update water sunDirection to point toward cursor for specular reflections
+      if (waterMeshRef.current?.material?.uniforms?.sunDirection) {
+        _sunDir.copy(_cursorWorldPos).normalize();
+        waterMeshRef.current.material.uniforms.sunDirection.value.copy(_sunDir);
+      }
+    }
+  });
+
+  return (
+    <>
+      <pointLight
+        ref={lightRef}
+        color={0xffeedd}
+        intensity={10}
+        distance={100}
+        decay={1.6}
+      />
+    </>
+  );
+}
+
 function AnimatedSky() {
   const skyRef = useRef<any>(null);
   const lightRef = useRef<any>(null);
 
   useFrame(({ clock }) => {
-    if (!skyRef.current?.material?.uniforms?.sunPosition) return;
-    const t = clock.elapsedTime * ((Math.PI * 2) / 60);
-    const sunY = Math.sin(t) * 400 + 345;
-    skyRef.current.material.uniforms.sunPosition.value.set(
-      Math.cos(t) * 2500,
-      sunY,
-      -1000,
-    );
+    // t goes 0→2π over DAY_NIGHT_PERIOD seconds
+    const t = clock.elapsedTime * ((Math.PI * 2) / DAY_NIGHT_PERIOD);
+    // sunY: sin curve — positive = day, negative = night
+    // Range: ~-45 to ~55 (centered around 5)
+    const sunY = Math.sin(t) * 50 + 5;
+
+    // sunNorm: 0 at night, 1 at noon
+    const sunNorm = Math.max(0, Math.min(0.5, (sunY + 10) / 65)); // Adjusted for smoother transition
+
+    const fadeDuration = 30; // Further increased fade duration for smoother transition
+
+    const isNight = sunY < -10; // Determine if it's night
+    const fadeFactor = isNight
+      ? Math.min(1, Math.max(0, (Math.abs(sunY) - 10) / fadeDuration)) // Gradual fade to night
+      : Math.max(0, Math.min(1, (sunY + 10) / fadeDuration)); // Gradual fade to day
+
+    // Ensure cards are not overly affected by lighting
+    const cards = document.querySelectorAll(".card-class"); // Replace with the actual class or selector for the cards
+    cards.forEach((cardElement) => {
+      if (cardElement instanceof HTMLElement) {
+        const cardBrightness = isNight ? 0.9 : 1; // Increased brightness at night
+        cardElement.style.filter = `brightness(${cardBrightness})`;
+      }
+    });
+
     if (lightRef.current) {
-      lightRef.current.intensity = Math.max(0.15, sunY / 400);
+      const baseIntensity = 0.3; // Increased base light intensity at night
+      const peakIntensity = 0.8;
+      const horizonBoost = Math.max(0, Math.sin(t) * 0.15);
+      lightRef.current.intensity =
+        baseIntensity +
+        sunNorm * (peakIntensity - baseIntensity) +
+        horizonBoost; // Smooth fade-out with light peaking at sunrise
+
+      // Smoothly interpolate light color during transitions
+      const dayColor = new THREE.Color(1, 0.78, 0.59); // Daylight color (RGB normalized)
+      const nightColor = new THREE.Color(0.1, 0.1, 0.2); // Nighttime color (dark blueish)
+      const interpolatedColor = dayColor.lerp(nightColor, 1 - sunNorm); // Interpolate based on sunNorm
+      lightRef.current.color = interpolatedColor;
+    }
+
+    // Gradual darkening of the sky at night
+    if (skyRef.current?.material?.uniforms?.rayleigh) {
+      const maxRayleigh = 1.5; // Maximum darkness at night
+      const minRayleigh = 0.5; // Minimum darkness during the day
+      skyRef.current.material.uniforms.rayleigh.value =
+        minRayleigh + (1 - sunNorm) * (maxRayleigh - minRayleigh); // Gradual darkening over a few seconds
+    }
+
+    // Gradual fade-out of pink in the sky during sunset
+    if (skyRef.current?.material?.uniforms?.mieDirectionalG) {
+      const sunsetPink = 0.5; // Intensity of pink during sunset
+      const nightBlue = 0.2; // Intensity of blue at night
+      skyRef.current.material.uniforms.mieDirectionalG.value =
+        nightBlue + sunNorm * (sunsetPink - nightBlue); // Gradual fade from pink to blue
+    }
+
+    // Remove color from the sky at night
+    if (skyRef.current?.material?.uniforms?.mieCoefficient) {
+      skyRef.current.material.uniforms.mieCoefficient.value =
+        0.02 + (1 - sunNorm) * 0.03; // Further increase mieCoefficient to remove color
+    }
+
+    // Adjust turbidity: low at noon (blue sky), higher at sunrise/sunset
+    if (skyRef.current?.material?.uniforms?.turbidity) {
+      // sunEdge: 1 near horizon, 0 at noon — drives warmer sunset look
+      const sunEdge = 1 - Math.min(1, Math.max(0, sunY / 90));
+      // Day: 1.0 (cool blue), Horizon: ~5 (warm haze), Night: ~12
+      skyRef.current.material.uniforms.turbidity.value =
+        1.0 + sunEdge * 4 + (1 - sunNorm) * 11; // Increase turbidity at night for a darker sky
+    }
+
+    if (skyRef.current?.material?.uniforms?.sunPosition) {
+      // Update the sun's position dynamically
+      const sunX = Math.cos(t) * 500;
+      const sunZ = Math.sin(t) * 500;
+      skyRef.current.material.uniforms.sunPosition.value.set(sunX, sunY, sunZ);
     }
   });
 
@@ -494,15 +653,18 @@ function AnimatedSky() {
       <ambientLight ref={lightRef} intensity={1.8} />
       <Sky
         ref={skyRef}
-        sunPosition={[3500, 300, -1000]}
+        sunPosition={[2500, 300, -1000]}
         turbidity={0.08}
-        rayleigh={0.03451231401125}
+        rayleigh={0.00003451231401125}
         mieCoefficient={0}
         mieDirectionalG={0.31495}
       />
     </>
   );
 }
+
+// Define the DAY_NIGHT_PERIOD constant
+const DAY_NIGHT_PERIOD = 60; // Adjust this value as needed for the day-night cycle duration
 
 export default function Carousel3D() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -592,6 +754,7 @@ export default function Carousel3D() {
             distortionScale={2.5}
           />
           <AnimatedSky />
+          {!isMobile && <CursorSun />}
           {isMobile ? (
             <MobileScene activeIndex={activeIndex} position={[0, 1.75, 0]} />
           ) : (

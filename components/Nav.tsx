@@ -18,7 +18,9 @@ export default function Nav() {
   const isHomePage = pathname === "/";
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [logoOpacity, setLogoOpacity] = useState(1);
-  const shouldUseWhiteLogo = isHomePage || pathname === "/about";
+  const [isNight, setIsNight] = useState(false);
+  const [logoColor, setLogoColor] = useState("black"); // Default to black
+  const [transitionDuration, setTransitionDuration] = useState("2s");
 
   useEffect(() => {
     const throttledScroll = throttle(() => {
@@ -35,6 +37,32 @@ export default function Nav() {
       clearTimeout(timer);
     };
   }, []);
+
+  useEffect(() => {
+    const handleDayNightCycle = (event) => {
+      const { isNight, sunNorm } = event.detail; // Use isNight for logo color
+
+      // Set logo color based on isNight
+      const targetColor = isNight ? "white" : "black";
+      console.log(
+        "Received isNight:",
+        isNight,
+        "Setting logo color to:",
+        targetColor,
+      ); // Debugging log
+      setLogoColor(targetColor);
+    };
+
+    window.addEventListener("dayNightCycle", handleDayNightCycle);
+
+    return () => {
+      window.removeEventListener("dayNightCycle", handleDayNightCycle);
+    };
+  }, []);
+
+  const shouldUseWhiteLogo =
+    // isHomePage ||
+    pathname === "/about," || isNight || pathname === "/music"; // Adjusted to include night logic
 
   // Fade logo when pathname changes
   useEffect(() => {
@@ -59,7 +87,11 @@ export default function Nav() {
             className={`h-14 md:h-22 mt-1 md:mt-2 object-contain animate-fade-in ${
               isInitialLoad ? "opacity-0" : "opacity-100"
             }`}
-            style={{ opacity: logoOpacity }}
+            style={{
+              opacity: logoOpacity,
+              transition: `color ${transitionDuration} ease`, // Smooth transition
+              color: logoColor, // Dynamically set color
+            }}
           />
         </Link>
       </header>
