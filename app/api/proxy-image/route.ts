@@ -12,7 +12,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // Set timeout to 5 seconds
+
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId); // Clear timeout if fetch succeeds
+
     const buffer = await response.arrayBuffer();
     const contentType = response.headers.get("content-type") || "image/jpeg";
 
@@ -23,7 +28,10 @@ export async function GET(request: NextRequest) {
         "Access-Control-Allow-Origin": "*",
       },
     });
-  } catch {
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return new NextResponse("Request timed out", { status: 504 });
+    }
     return new NextResponse("Failed to fetch image", { status: 500 });
   }
 }

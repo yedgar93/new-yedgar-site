@@ -585,11 +585,11 @@ function AnimatedSky() {
       : Math.max(0, Math.min(1, (sunY + 10) / fadeDuration)); // Gradual fade to day
 
     // Ensure cards are not overly affected by lighting
-    const cards = document.querySelectorAll(".card-class"); // Replace with the actual class or selector for the cards
-    cards.forEach((cardElement) => {
-      if (cardElement instanceof HTMLElement) {
+    const cardMeshes: THREE.Mesh[] = []; // Replace with actual references to your card meshes
+    cardMeshes.forEach((cardMesh) => {
+      if (cardMesh.material instanceof THREE.MeshStandardMaterial) {
         const cardBrightness = isNight ? 0.9 : 1; // Increased brightness at night
-        cardElement.style.filter = `brightness(${cardBrightness})`;
+        cardMesh.material.emissiveIntensity = cardBrightness; // Adjust emissive intensity directly
       }
     });
 

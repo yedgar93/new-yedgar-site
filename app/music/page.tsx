@@ -26,7 +26,22 @@ export default function MusicPage() {
       // window may be unavailable during some edge cases; ignore
     }
   }, []);
-  const active = releases[activeIndex];
+
+  const updateURL = useCallback((trackId: string) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("track", trackId);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, "", newUrl);
+  }, []);
+
+  const active = releases[activeIndex]; // Moved above to fix the issue
+
+  useEffect(() => {
+    if (active) {
+      updateURL(active.id);
+    }
+  }, [active, updateURL]);
+
   const n = releases.length;
 
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);

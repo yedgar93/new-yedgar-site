@@ -16,20 +16,18 @@ import { createNoise2D } from "simplex-noise";
 /* ------------------------------------------------------------------ */
 
 const noise2D = createNoise2D();
+const yCache = new Map<string, number>(); // Module-level cache for storing computed values
 
 function getYPosition(x: number, z: number) {
-  const cache = new Map<string, number>(); // Cache for storing computed values
   const key = `${x},${z}`; // Create a unique key for each x, z pair
-
-  if (cache.has(key)) {
-    return cache.get(key)!.value; // Return cached value if it exists
-  }
+  const cached = yCache.get(key); // Retrieve cached value if it exists
+  if (cached !== undefined) return cached;
 
   let y = 2 * noise2D(x / 50, z / 50);
   y += 4 * noise2D(x / 100, z / 1000);
   y += 0.2 * noise2D(x / 10, z / 10);
 
-  cache.set(key, y); // Cache the computed value
+  yCache.set(key, y); // Cache the computed value
   return y;
 }
 
@@ -215,7 +213,7 @@ function getAttributeData(instances: number, width: number) {
 /*  Grass mesh                                                         */
 /* ------------------------------------------------------------------ */
 
-const BLADE_WIDTH = 0.047;
+const BLADE_WIDTH = 0.049;
 const BLADE_HEIGHT = 2.23;
 const BLADE_JOINTS = 10;
 const INSTANCES = 42000; // Reduced from 47000 for performance optimization
@@ -228,6 +226,13 @@ const Grass = memo(function Grass() {
     "/blade_diffuse.jpg",
     "/blade_alpha.jpg",
   ]);
+
+  texture.generateMipmaps = true; // Ensure mipmaps are enabled
+  texture.anisotropy = 4; // Set anisotropy to a sane value
+  texture.colorSpace = THREE.SRGBColorSpace; // Ensure correct color space
+  alphaMap.generateMipmaps = true; // Ensure mipmaps are enabled
+  alphaMap.anisotropy = 4; // Set anisotropy to a sane value
+  alphaMap.colorSpace = THREE.SRGBColorSpace; // Ensure correct color space
 
   const attributeData = useMemo(
     () => getAttributeData(INSTANCES, FIELD_WIDTH),
@@ -259,6 +264,11 @@ const Grass = memo(function Grass() {
     return geo;
   }, []);
 
+  const basePositions = useMemo(() => {
+    const positions = baseGeometry.attributes.position.array;
+    return new Float32Array(positions); // Cache the initial positions
+  }, [baseGeometry]);
+
   const customClock = useMemo(() => {
     const start =
       typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -281,10 +291,34 @@ const Grass = memo(function Grass() {
     [texture, alphaMap],
   );
 
-  useFrame(() => {
+  const positionAttr = baseGeometry.attributes.position;
+
+  useEffect(() => {
+    if (positionAttr instanceof THREE.BufferAttribute) {
+      positionAttr.setUsage(THREE.DynamicDrawUsage); // Optimize buffer updates for frequent changes
+    }
+  }, [positionAttr]);
+
+  useFrame((state, delta) => {
     if (materialRef.current) {
-      materialRef.current.uniforms.time.value =
-        customClock.getElapsedTime() / 4;
+      const elapsedTime = customClock.getElapsedTime(); // Cache elapsed time
+      const positions = positionAttr.array;
+
+      for (let i = 0; i < basePositions.length; i += 3) {
+        const x = basePositions[i];
+        const y = basePositions[i + 1];
+        const z = basePositions[i + 2];
+
+        // Apply wind sway based on base positions and elapsed time
+        positions[i] = x + Math.sin(elapsedTime + x) * 0.1;
+        positions[i + 1] = y + Math.cos(elapsedTime + z) * 0.1;
+        positions[i + 2] = z;
+      }
+
+      positionAttr.needsUpdate = true; // Efficiently mark the buffer for update
+
+      // Update time uniform for material
+      materialRef.current.uniforms.time.value = elapsedTime / 4;
     }
   });
 
@@ -354,14 +388,18 @@ function CameraController() {
     }
 
     // Smoothly update the camera position only if pointer has moved
-    if (state.pointer.x !== 0 || state.pointer.y !== 0) {
-      easing.damp3(
-        state.camera.position,
-        [1 + state.pointer.x * 0.7, 8 + state.pointer.y * 0.6, 25],
-        0.3,
-        d,
-      );
+    const targetPosition: [number, number, number] = [
+      1 + state.pointer.x * 0.7, // Horizontal movement sensitivity
+      8 + state.pointer.y * 0.6, // Vertical movement sensitivity
+      25,
+    ];
+    if (
+      !initialPosition.current ||
+      !state.camera.position.equals(new THREE.Vector3(...targetPosition))
+    ) {
+      easing.damp3(state.camera.position, targetPosition, 0.3, d);
       state.camera.lookAt(0, 0, 0);
+      initialPosition.current = true;
     }
   });
 
@@ -399,14 +437,6 @@ function AnimatedEnvironment() {
     const opacity = isNight
       ? 0.5 + fadeFactor * 0.5 // Fade to 0.5 at night
       : 0.125 + fadeFactor * 0.375; // Gradual fade from 0.125 to 0.5 during sunset
-
-    // Apply opacity to the specific div dynamically
-    const divElement = document.querySelector(
-      "div[style*='background-color: black'",
-    );
-    if (divElement) {
-      divElement.style.opacity = opacity.toString();
-    }
 
     if (skyRef.current?.material?.uniforms?.sunPosition) {
       // Smoothly move the sun below the horizon before disappearing
@@ -595,6 +625,7 @@ export default function GrassBackground({
         }}
       >
         <Canvas
+          dpr={[1, 1.5]} // Clamped DPR for better performance
           frameloop={isVisible && isTabVisible ? "always" : "demand"}
           gl={{
             powerPreference: "low-power",
