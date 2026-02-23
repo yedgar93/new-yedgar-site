@@ -15,7 +15,11 @@ const GrassBackground = memo(
 );
 
 export default function MusicPage() {
-  return <MusicPageContent />;
+  return (
+    <Suspense fallback={null}>
+      <MusicPageContent />
+    </Suspense>
+  );
 }
 
 function MusicPageContent() {
@@ -51,9 +55,12 @@ function MusicPageContent() {
     }
   }, [isMobile]);
 
-  // Re-init tilt on active artwork change
   useEffect(() => {
     initTilt();
+  }, [initTilt]);
+
+  // Re-init tilt on active artwork change
+  useEffect(() => {
     return () => {
       const node = artworkRef.current as
         | (HTMLDivElement & { vanillaTilt?: any })
