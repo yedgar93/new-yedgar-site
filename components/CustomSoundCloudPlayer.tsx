@@ -23,20 +23,10 @@ const CustomSoundCloudPlayer = ({
     setHasError(false); // Reset error state when trackUrl changes
     setRetryCount(0); // Reset retry count when trackUrl changes
 
-    const timer = setTimeout(() => {
-      if (!isLoaded && retryCount < 3) {
-        console.warn("Retrying SoundCloud player load for URL:", trackUrl);
-        setRetryCount((prev) => prev + 1);
-      } else if (!isLoaded) {
-        console.error(
-          "Failed to load SoundCloud player after retries for URL:",
-          trackUrl,
-        );
-        setHasError(true);
-      }
-    }, 5000); // Retry every 5 seconds, up to 3 times
-
-    return () => clearTimeout(timer);
+    if (isLoaded || retryCount >= 3) {
+      // Prevent retry logic if the player is already loaded or retry limit is reached
+      return;
+    }
   }, [isLoaded, retryCount, trackUrl]);
 
   const handleLoad = () => {
@@ -55,9 +45,7 @@ const CustomSoundCloudPlayer = ({
       <link rel="preconnect" href="https://w.soundcloud.com" />
       <link rel="preconnect" href="https://api.soundcloud.com" />
 
-      {hasError ? (
-        <div>Error loading SoundCloud player. Please try again later.</div>
-      ) : (
+      {
         <iframe
           ref={iframeRef}
           title="SoundCloud Player"
@@ -66,16 +54,14 @@ const CustomSoundCloudPlayer = ({
           scrolling="no"
           frameBorder="no"
           allow="autoplay"
+          src={embedUrl}
+          onLoad={handleLoad}
           style={{
             maxWidth: "600px",
             filter: "grayscale(100%)",
-            opacity: isLoaded ? 1 : 0, // Ensure it fades in only when loaded
-            transition: "opacity 0.5s ease", // Smooth fade-in
           }}
-          src={embedUrl}
-          onLoad={handleLoad}
         ></iframe>
-      )}
+      }
     </>
   );
 };

@@ -263,7 +263,6 @@ function MusicPageContent() {
           <div className="mt-4 md:mt-6 w-full max-w-sm md:max-w-md">
             <LazyMount>
               <CustomSoundCloudPlayer
-                key={active.soundcloudUrl}
                 trackUrl={active.soundcloudUrl}
                 shouldAutoPlay={false}
               />
