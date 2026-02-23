@@ -1,3 +1,4 @@
+import { opacity } from "html2canvas/dist/types/css/property-descriptors/opacity";
 import React, { useEffect, useRef, useState } from "react";
 
 const CustomSoundCloudPlayer = ({
@@ -68,24 +69,26 @@ const CustomSoundCloudPlayer = ({
       <link rel="preconnect" href="https://w.soundcloud.com" />
       <link rel="preconnect" href="https://api.soundcloud.com" />
 
-      <iframe
-        ref={iframeRef}
-        title="SoundCloud Player"
-        width="100%"
-        height="20"
-        scrolling="no"
-        frameBorder="no"
-        allow="autoplay"
-        src={embedUrl}
-        onLoad={handleLoad}
-        style={{
-          maxWidth: "600px",
-          filter: "grayscale(100%)",
-          opacity: isFadingOut ? 0 : isVisible ? 1 : 0, // Dynamically adjust opacity for fade-in and fade-out
-          transition: "opacity 0.5s ease-in-out", // Smooth transition for both fade-out and fade-in
-          backgroundColor: "transparent", // Set background to transparent
-        }}
-      ></iframe>
+      <div style={{ opacity: 0.75 }}>
+        <iframe
+          ref={iframeRef}
+          title="SoundCloud Player"
+          width="100%"
+          height="20"
+          scrolling="no"
+          frameBorder="no"
+          allow="autoplay"
+          src={embedUrl}
+          onLoad={handleLoad}
+          style={{
+            maxWidth: "600px",
+            filter: "grayscale(100%)",
+            opacity: isFadingOut ? 0 : isVisible ? 1 : 0, // Dynamically adjust opacity for fade-in and fade-out
+            transition: "opacity 0.5s ease-in-out", // Smooth transition for both fade-out and fade-in
+            backgroundColor: "transparent", // Set background to transparent
+          }}
+        ></iframe>
+      </div>
     </>
   );
 };
