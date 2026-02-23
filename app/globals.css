@@ -8,6 +8,7 @@
   --fg-dim: #a0a0a0;
   --accent: #161718;
   --accent-hover: #3a3a3a;
+  --font-witchery-gothic: "Witchery Gothic", serif;
 }
 
 @theme inline {
@@ -233,4 +234,12 @@ html:has(.no-scrollbar) {
 
 html:has(.no-scrollbar)::-webkit-scrollbar {
   display: none;
+}
+
+@font-face {
+  font-family: "Witchery Gothic";
+  src: url("/public/WitcheryGothic.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }

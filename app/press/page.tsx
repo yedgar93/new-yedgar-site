@@ -1,12 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import LazyMount from "@/components/LazyMount";
 import { siteMetadata } from "@/data/metadata";
-
-const FluidBackground = dynamic(() => import("@/components/FluidBackground"), {
-  ssr: false,
-});
 
 export default function PressPage() {
   return (
@@ -14,7 +9,7 @@ export default function PressPage() {
       <LazyMount
         placeholder={<div className="canvas-placeholder fluid-placeholder" />}
       >
-        <FluidBackground />
+        <div /> {/* Placeholder child to satisfy Props interface */}
       </LazyMount>
 
       <div className="max-w-2xl px-4 md:px-6 text-center">

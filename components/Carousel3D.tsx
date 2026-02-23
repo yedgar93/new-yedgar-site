@@ -257,7 +257,9 @@ function Card({
   );
 }
 
-function ActiveCard({
+import ActiveCard from "./ActiveCard"; // Assuming ActiveCard is a component
+
+function LocalActiveCard({
   hovered,
   release,
   isMobile,
@@ -296,7 +298,7 @@ function ActiveCard({
         anchorX={isMobile ? "center" : "left"}
         anchorY={isMobile ? "top" : undefined}
         textAlign={isMobile ? "center" : undefined}
-        color="#white"
+        color="white"
         outlineWidth={0.035}
         outlineColor="black"
         outlineOpacity={0.1}
@@ -436,7 +438,7 @@ function Scene(props: any) {
         }}
         pointerPos={pointerPosRef.current}
       />
-      <ActiveCard hovered={hovered} release={active} />
+      <LocalActiveCard hovered={hovered} release={active} />
     </group>
   );
 }
@@ -502,7 +504,7 @@ function MobileScene({
         activeIndex={activeIndex}
         cardScale={0.75}
       />
-      <ActiveCard
+      <LocalActiveCard
         hovered={activeIndex}
         release={activeRelease}
         isMobile

@@ -216,8 +216,8 @@ function getAttributeData(instances: number, width: number) {
 const BLADE_WIDTH = 0.049;
 const BLADE_HEIGHT = 2.23;
 const BLADE_JOINTS = 10;
-const INSTANCES = 42000; // Reduced from 47000 for performance optimization
-const FIELD_WIDTH = 121; // Increase the field width to ensure it extends off-screen horizontally
+const INSTANCES = 44000; // Reduced from 47000 for performance optimization
+const FIELD_WIDTH = 111; // Increase the field width to ensure it extends off-screen horizontally
 
 const Grass = memo(function Grass() {
   const materialRef = useRef<THREE.RawShaderMaterial>(null);
