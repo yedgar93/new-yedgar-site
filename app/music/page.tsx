@@ -42,7 +42,7 @@ function MusicPageContent() {
   const active = releases[activeIndex];
 
   // only update URL when user *actively changes* the track
-  const selectTrack = (idx) => {
+  const selectTrack = (idx: number) => {
     if (idx === activeIndex) return;
     setActiveIndex(idx);
     router.replace(`?track=${encodeURIComponent(releases[idx].id)}`, { scroll: false });
