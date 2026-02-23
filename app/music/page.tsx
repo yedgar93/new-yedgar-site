@@ -5,7 +5,7 @@ import { releases } from "@/data/releases";
 import { useState, memo, useEffect, useRef, useCallback } from "react";
 import VanillaTilt from "vanilla-tilt";
 import { useResizeObserver } from "@/utils/useResizeObserver";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import CustomSoundCloudPlayer from "@/components/CustomSoundCloudPlayer";
 import LazyMount from "@/components/LazyMount";
 import { Suspense } from "react";
@@ -24,9 +24,29 @@ export default function MusicPage() {
 
 function MusicPageContent() {
   const artworkRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const trackParam = searchParams.get("track");
+
+  // only initialize from URL once
+  const [activeIndex, setActiveIndex] = useState(() => {
+    if (trackParam) {
+      const index = releases.findIndex((r) => r.id === trackParam);
+      return index >= 0 ? index : 0;
+    }
+    return 0;
+  });
+
+  const didInitURL = useRef(Boolean(trackParam));
+
   const active = releases[activeIndex];
+
+  // only update URL when user *actively changes* the track
+  const selectTrack = (idx) => {
+    if (idx === activeIndex) return;
+    setActiveIndex(idx);
+    router.replace(`?track=${encodeURIComponent(releases[idx].id)}`, { scroll: false });
+  };
 
   const isMobile = useCallback(() => {
     return typeof window !== "undefined" && window.innerWidth <= 768;
@@ -71,15 +91,6 @@ function MusicPageContent() {
 
   // Re-init tilt on resize
   useResizeObserver(artworkRef as React.RefObject<Element>, initTilt);
-
-  // Reactively update activeIndex when ?track= changes
-  useEffect(() => {
-    const trackId = searchParams.get("track");
-    if (trackId) {
-      const index = releases.findIndex((r) => r.id === trackId);
-      if (index >= 0) setActiveIndex(index);
-    }
-  }, [searchParams]);
 
   const updateURL = useCallback((trackId: string) => {
     const params = new URLSearchParams(window.location.search);

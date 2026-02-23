@@ -20,6 +20,7 @@
     "lodash-es": "^4.17.23",
     "maath": "^0.10.8",
     "next": "16.1.6",
+    "next/navigation": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "simplex-noise": "^4.0.3",
