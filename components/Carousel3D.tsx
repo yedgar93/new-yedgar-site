@@ -257,8 +257,6 @@ function Card({
   );
 }
 
-import ActiveCard from "./ActiveCard"; // Assuming ActiveCard is a component
-
 function LocalActiveCard({
   hovered,
   release,
