@@ -342,7 +342,7 @@ function LocalActiveCard({
 function Cards({
   from = 0,
   len = Math.PI * 2,
-  radius = 5.25,
+  radius = 4.75,
   onPointerOver,
   onPointerOut,
   onCardClick,
