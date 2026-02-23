@@ -8,12 +8,21 @@ import { useResizeObserver } from "@/utils/useResizeObserver";
 import { useSearchParams } from "next/navigation";
 import CustomSoundCloudPlayer from "@/components/CustomSoundCloudPlayer";
 import LazyMount from "@/components/LazyMount";
+import { Suspense } from "react";
 
 const GrassBackground = memo(
   dynamic(() => import("@/components/GrassBackground"), { ssr: false }),
 );
 
 export default function MusicPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MusicPageContent />
+    </Suspense>
+  );
+}
+
+function MusicPageContent() {
   const artworkRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const searchParams = useSearchParams();
