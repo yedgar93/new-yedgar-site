@@ -45,7 +45,9 @@ function MusicPageContent() {
   const selectTrack = (idx: number) => {
     if (idx === activeIndex) return;
     setActiveIndex(idx);
-    router.replace(`?track=${encodeURIComponent(releases[idx].id)}`, { scroll: false });
+    router.replace(`?track=${encodeURIComponent(releases[idx].id)}`, {
+      scroll: false,
+    });
   };
 
   const isMobile = useCallback(() => {
@@ -152,7 +154,7 @@ function MusicPageContent() {
   // Prevent body scroll on this page
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    document.body.style.backgroundColor = "#000000";
+    document.body.style.backgroundColor = "transparent";
     return () => {
       document.body.style.overflow = "";
       document.body.style.backgroundColor = "";

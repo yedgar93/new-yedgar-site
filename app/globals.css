@@ -11,18 +11,6 @@
   --font-witchery-gothic: "Witchery Gothic", serif;
 }
 
-@theme inline {
-  --color-bg: var(--bg);
-  --color-bg-warm: var(--bg-warm);
-  --color-fg: var(--fg);
-  --color-fg-muted: var(--fg-muted);
-  --color-fg-dim: var(--fg-dim);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --font-sans: var(--font-space-grotesk);
-  --font-mono: var(--font-jetbrains-mono);
-}
-
 /* Base */
 html {
   scroll-behavior: smooth;

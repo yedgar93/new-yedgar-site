@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import LayoutClient from "./LayoutClient";
+import Head from 'next/head';
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -43,6 +44,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <Head>
+        {/* Preload DNS and preconnect for external resources */}
+        <link rel="dns-prefetch" href="https://w.soundcloud.com" />
+        <link rel="preconnect" href="https://w.soundcloud.com" />
+        <link rel="preconnect" href="https://api.soundcloud.com" />
+        {/* Add other external resources here if needed */}
+      </Head>
       <body
         className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
