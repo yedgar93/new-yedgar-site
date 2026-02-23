@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    if (error.name === "AbortError") {
+    if (error instanceof Error && error.name === "AbortError") {
       return new NextResponse("Request timed out", { status: 504 });
     }
     return new NextResponse("Failed to fetch image", { status: 500 });
