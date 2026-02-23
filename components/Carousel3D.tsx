@@ -297,7 +297,7 @@ function LocalActiveCard({
         anchorY={isMobile ? "top" : undefined}
         textAlign={isMobile ? "center" : undefined}
         color="white"
-        outlineWidth={0.051}
+        outlineWidth={0.035}
         outlineColor="black"
         outlineOpacity={0.1}
         lineHeight={1.4}

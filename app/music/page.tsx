@@ -27,7 +27,7 @@ export default function MusicPage() {
     if (node) {
       if (node.vanillaTilt) node.vanillaTilt.destroy();
       VanillaTilt.init(node, {
-        max: 5,
+        max: 15,
         speed: 100,
         glare: true,
         "max-glare": 0.4,
