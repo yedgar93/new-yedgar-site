@@ -28,8 +28,14 @@ function MusicPageContent() {
   const searchParams = useSearchParams();
   const active = releases[activeIndex];
 
+  const isMobile = useCallback(() => {
+    return typeof window !== "undefined" && window.innerWidth <= 768;
+  }, []);
+
   // Helper to (re)initialize VanillaTilt
   const initTilt = useCallback(() => {
+    if (isMobile()) return; // Disable VanillaTilt on mobile
+
     const node = artworkRef.current as
       | (HTMLDivElement & { vanillaTilt?: any })
       | null;
@@ -39,7 +45,7 @@ function MusicPageContent() {
         max: 15,
         speed: 100,
         glare: true,
-        "max-glare": 0.4,
+        "max-glare": 0.375,
         scale: 1.0,
         gyroscope: true,
         perspective: 800,
@@ -47,7 +53,7 @@ function MusicPageContent() {
         axis: null,
       });
     }
-  }, []);
+  }, [isMobile]);
 
   // Re-init tilt on active artwork change
   useEffect(() => {

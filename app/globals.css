@@ -43,6 +43,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 ::selection {
@@ -234,6 +236,20 @@ html:has(.no-scrollbar) {
 
 html:has(.no-scrollbar)::-webkit-scrollbar {
   display: none;
+}
+
+/* Prevent text and images from being selected or dragged */
+body, html {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -moz-user-select: none;
+}
+
+img {
+  user-drag: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 @font-face {

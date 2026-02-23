@@ -69,10 +69,10 @@ export default function Nav() {
   }, []);
 
   const shouldUseWhiteLogo =
-    // isHomePage ||
-    pathname === "/about," || isNight;
-  // || pathname === "music";
-  // Adjusted to include night logic
+    isHomePage ||
+    pathname === "/about" ||
+    // || pathname === "music,"
+    isNight;
 
   // Fade logo when pathname changes
   useEffect(() => {

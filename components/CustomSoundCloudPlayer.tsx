@@ -9,45 +9,36 @@ const CustomSoundCloudPlayer = ({
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoaded, setIsLoaded] = useState(false); // Track iframe loading state
+  const [hasError, setHasError] = useState(false); // Track error state
+  const [retryCount, setRetryCount] = useState(0); // Track retry count
 
   useEffect(() => {
-    setIsLoaded(false); // Reset loading state whenever trackUrl changes
-    if (iframeRef.current) {
-      const handleMessage = (event: MessageEvent) => {
-        // Only accept messages from the player iframe instance
-        if (!iframeRef.current) return;
-        try {
-          if (event.source !== iframeRef.current.contentWindow) return;
-        } catch (e) {
-          return;
-        }
-
-        // Some messages are plain strings or not JSON — guard parse
-        let data: any = null;
-        try {
-          data =
-            typeof event.data === "string"
-              ? JSON.parse(event.data)
-              : event.data;
-        } catch (err) {
-          return;
-        }
-
-        if (data && data.event === "ready" && shouldAutoPlay) {
-          const message = JSON.stringify({ method: "play" });
-          try {
-            iframeRef.current?.contentWindow?.postMessage(message, "*");
-          } catch (e) {}
-        }
-      };
-
-      window.addEventListener("message", handleMessage);
-
-      return () => {
-        window.removeEventListener("message", handleMessage);
-      };
+    if (!trackUrl) {
+      console.error("Invalid track URL provided:", trackUrl);
+      setHasError(true);
+      return;
     }
-  }, [trackUrl, shouldAutoPlay]);
+
+    const timer = setTimeout(() => {
+      if (!isLoaded && retryCount < 3) {
+        console.warn("Retrying SoundCloud player load for URL:", trackUrl);
+        setRetryCount((prev) => prev + 1);
+      } else if (!isLoaded) {
+        console.error(
+          "Failed to load SoundCloud player after retries for URL:",
+          trackUrl
+        );
+        setHasError(true);
+      }
+    }, 5000); // Retry every 5 seconds, up to 3 times
+
+    return () => clearTimeout(timer);
+  }, [isLoaded, retryCount, trackUrl]);
+
+  const handleLoad = () => {
+    setIsLoaded(true);
+    setHasError(false);
+  };
 
   const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(
     trackUrl,
@@ -71,6 +62,7 @@ const CustomSoundCloudPlayer = ({
           maxWidth: "600px",
         }}
       >
+        {!isLoaded && <div className="loading">Loading SoundCloud player...</div>}
         <iframe
           ref={iframeRef}
           width="100%"
@@ -79,22 +71,8 @@ const CustomSoundCloudPlayer = ({
           frameBorder="no"
           allow="autoplay"
           src={embedUrl}
-          onLoad={() => {
-            setIsLoaded(true);
-            const sendInit = (attempt = 0) => {
-              try {
-                const initMessage = JSON.stringify({
-                  method: "addEventListener",
-                  events: ["ready"],
-                });
-                iframeRef.current?.contentWindow?.postMessage(initMessage, "*");
-              } catch (e) {}
-              if (attempt < 3) {
-                setTimeout(() => sendInit(attempt + 1), 500);
-              }
-            };
-            setTimeout(() => sendInit(), 300);
-          }}
+          onLoad={handleLoad}
+          onError={() => setHasError(true)}
           style={{
             maxWidth: "600px",
             filter: "grayscale(100%)",
@@ -103,6 +81,12 @@ const CustomSoundCloudPlayer = ({
           }}
         ></iframe>
       </div>
+
+      {hasError && (
+        <div className="error">
+          Failed to load SoundCloud player. Please refresh the page or try again later.
+        </div>
+      )}
     </>
   );
 };

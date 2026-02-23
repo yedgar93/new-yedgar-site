@@ -205,7 +205,7 @@ export const releases: Release[] = [
     artwork:
       "https://i1.sndcdn.com/artworks-000479288757-ajku4y-t1080x1080.jpg",
     spotifyUrl: "https://open.spotify.com/track/0N2n1ekBsGoCNoRSgYHrmD",
-    soundcloudUrl: "https://soundcloud.com/yumeuk/over-you-yedgar",
+    soundcloudUrl: "https://soundcloud.com/yumecollective/yedgar-over-you-yume",
     color: "#F59E0D",
   },
   // {
