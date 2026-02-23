@@ -15,11 +15,7 @@ const GrassBackground = memo(
 );
 
 export default function MusicPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <MusicPageContent />
-    </Suspense>
-  );
+  return <MusicPageContent />;
 }
 
 function MusicPageContent() {
