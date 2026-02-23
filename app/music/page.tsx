@@ -3,6 +3,9 @@
 import dynamic from "next/dynamic";
 import { releases } from "@/data/releases";
 import { useState, memo, useEffect, useRef, useCallback } from "react";
+import VanillaTilt from "vanilla-tilt";
+import { useResizeObserver } from "@/utils/useResizeObserver";
+import { useSearchParams } from "next/navigation";
 import CustomSoundCloudPlayer from "@/components/CustomSoundCloudPlayer";
 import LazyMount from "@/components/LazyMount";
 
@@ -11,21 +14,54 @@ const GrassBackground = memo(
 );
 
 export default function MusicPage() {
+  const artworkRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const searchParams = useSearchParams();
+  const active = releases[activeIndex];
 
-  // Read URL params on the client to set initial index (avoid using next/navigation during build)
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const trackId = params.get("track");
-      if (trackId) {
-        const index = releases.findIndex((r) => r.id === trackId);
-        if (index >= 0) setActiveIndex(index);
-      }
-    } catch (e) {
-      // window may be unavailable during some edge cases; ignore
+  // Helper to (re)initialize VanillaTilt
+  const initTilt = useCallback(() => {
+    const node = artworkRef.current as
+      | (HTMLDivElement & { vanillaTilt?: any })
+      | null;
+    if (node) {
+      if (node.vanillaTilt) node.vanillaTilt.destroy();
+      VanillaTilt.init(node, {
+        max: 5,
+        speed: 100,
+        glare: true,
+        "max-glare": 0.4,
+        scale: 1.0,
+        gyroscope: true,
+        perspective: 800,
+        reset: true,
+        axis: null,
+      });
     }
   }, []);
+
+  // Re-init tilt on active artwork change
+  useEffect(() => {
+    initTilt();
+    return () => {
+      const node = artworkRef.current as
+        | (HTMLDivElement & { vanillaTilt?: any })
+        | null;
+      if (node && node.vanillaTilt) node.vanillaTilt.destroy();
+    };
+  }, [active.id, initTilt]);
+
+  // Re-init tilt on resize
+  useResizeObserver(artworkRef as React.RefObject<Element>, initTilt);
+
+  // Reactively update activeIndex when ?track= changes
+  useEffect(() => {
+    const trackId = searchParams.get("track");
+    if (trackId) {
+      const index = releases.findIndex((r) => r.id === trackId);
+      if (index >= 0) setActiveIndex(index);
+    }
+  }, [searchParams]);
 
   const updateURL = useCallback((trackId: string) => {
     const params = new URLSearchParams(window.location.search);
@@ -33,8 +69,6 @@ export default function MusicPage() {
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, "", newUrl);
   }, []);
-
-  const active = releases[activeIndex]; // Moved above to fix the issue
 
   useEffect(() => {
     if (active) {
@@ -116,12 +150,26 @@ export default function MusicPage() {
         {active.artwork && (
           <div
             key={`art-${active.id}`}
-            className="w-36 h-36 md:w-56 md:h-56 rounded-sm overflow-hidden shadow-lg animate-scale-in mb-4 md:mb-8"
+            ref={artworkRef}
+            className="w-36 h-36 md:w-56 md:h-56 shadow-lg  mb-4 md:mb-8 flex items-center justify-center"
+            style={{
+              perspective: "800px",
+              pointerEvents: "auto",
+              WebkitTapHighlightColor: "transparent",
+              background: "#000",
+            }}
           >
             <img
               src={active.artwork}
               alt={active.title}
               className="w-full h-full object-cover"
+              style={{
+                pointerEvents: "none",
+                userSelect: "none",
+                display: "block",
+                borderRadius: 0,
+              }}
+              draggable={false}
             />
           </div>
         )}
@@ -135,14 +183,14 @@ export default function MusicPage() {
         {/* Title — large */}
         <h1
           key={active.id}
-          className="mt-2 md:mt-3 text-[clamp(1.5rem,6vw,4.5rem)] font-bold leading-[0.9] tracking-tight text-fg-bright text-gray-300 animate-scale-in"
+          className="mt-2 md:mt-3 text-[clamp(1.5rem,6vw,4.5rem)] font-bold leading-[1.1] tracking-tight text-fg-bright text-gray-300 animate-scale-in"
         >
           {active.title}
         </h1>
 
         {/* Label */}
         {active.label && (
-          <p className="mt-3 text-[11px] tracking-[0.2em] uppercase text-fg-bright text-gray-300 animate-fade-in delay-2">
+          <p className="lg:mt-4 mt-3 text-[11px] tracking-[0.2em] uppercase text-fg-bright text-gray-300 animate-fade-in delay-2">
             {active.label}
           </p>
         )}
@@ -244,7 +292,7 @@ export default function MusicPage() {
         .soundcloud-embed {
           margin-top: 1.5rem;
           max-width: 100%;
-          border-radius: 8px;
+          border-radius: 0px;
           overflow: hidden;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }

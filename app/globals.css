@@ -28,6 +28,7 @@ html {
   scroll-behavior: smooth;
   background-color: #000000;
   overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 /* Light pages get white html background */
@@ -233,6 +234,16 @@ html:has(.no-scrollbar) {
 }
 
 html:has(.no-scrollbar)::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure no horizontal scrollbar on the music page */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Hide scrollbars globally for WebKit-based browsers */
+::-webkit-scrollbar {
   display: none;
 }
 
