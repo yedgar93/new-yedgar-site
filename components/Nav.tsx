@@ -39,7 +39,7 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    const handleDayNightCycle = (event) => {
+    const handleDayNightCycle = (event: CustomEvent<{ isNight: boolean; sunNorm: number }>) => {
       const { isNight, sunNorm } = event.detail; // Use isNight for logo color
 
       // Set logo color based on isNight
@@ -53,10 +53,16 @@ export default function Nav() {
       setLogoColor(targetColor);
     };
 
-    window.addEventListener("dayNightCycle", handleDayNightCycle);
+    window.addEventListener(
+      "dayNightCycle",
+      handleDayNightCycle as EventListener
+    );
 
     return () => {
-      window.removeEventListener("dayNightCycle", handleDayNightCycle);
+      window.removeEventListener(
+        "dayNightCycle",
+        handleDayNightCycle as EventListener
+      );
     };
   }, []);
 
