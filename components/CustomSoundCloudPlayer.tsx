@@ -19,6 +19,10 @@ const CustomSoundCloudPlayer = ({
       return;
     }
 
+    setIsLoaded(false); // Reset loading state when trackUrl changes
+    setHasError(false); // Reset error state when trackUrl changes
+    setRetryCount(0); // Reset retry count when trackUrl changes
+
     const timer = setTimeout(() => {
       if (!isLoaded && retryCount < 3) {
         console.warn("Retrying SoundCloud player load for URL:", trackUrl);
@@ -26,7 +30,7 @@ const CustomSoundCloudPlayer = ({
       } else if (!isLoaded) {
         console.error(
           "Failed to load SoundCloud player after retries for URL:",
-          trackUrl
+          trackUrl,
         );
         setHasError(true);
       }
@@ -42,50 +46,35 @@ const CustomSoundCloudPlayer = ({
 
   const embedUrl = `https://w.soundcloud.com/player/?url=${encodeURIComponent(
     trackUrl,
-  )}&color=%23000000&inverse=true&auto_play=false&show_user=false&visual=false`;
+  )}&color=%23000000&inverse=true&auto_play=${shouldAutoPlay}&show_user=false&visual=false`;
 
   return (
     <>
       {/* Preload DNS and preconnect for faster iframe loading */}
       <link rel="dns-prefetch" href="https://w.soundcloud.com" />
-      <link
-        rel="preconnect"
-        href="https://w.soundcloud.com"
-        crossOrigin="anonymous"
-      />
+      <link rel="preconnect" href="https://w.soundcloud.com" />
+      <link rel="preconnect" href="https://api.soundcloud.com" />
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          width: "100%",
-          maxWidth: "600px",
-        }}
-      >
-        {!isLoaded && <div className="loading">Loading SoundCloud player...</div>}
+      {hasError ? (
+        <div>Error loading SoundCloud player. Please try again later.</div>
+      ) : (
         <iframe
           ref={iframeRef}
+          title="SoundCloud Player"
           width="100%"
           height="20"
-          scrolling="yes"
+          scrolling="no"
           frameBorder="no"
           allow="autoplay"
-          src={embedUrl}
-          onLoad={handleLoad}
-          onError={() => setHasError(true)}
           style={{
             maxWidth: "600px",
             filter: "grayscale(100%)",
             opacity: isLoaded ? 1 : 0, // Ensure it fades in only when loaded
             transition: "opacity 0.5s ease", // Smooth fade-in
           }}
+          src={embedUrl}
+          onLoad={handleLoad}
         ></iframe>
-      </div>
-
-      {hasError && (
-        <div className="error">
-          Failed to load SoundCloud player. Please refresh the page or try again later.
-        </div>
       )}
     </>
   );
