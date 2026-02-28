@@ -21,7 +21,7 @@ const _dayColor = new THREE.Color(1, 0.78, 0.59);
 const _nightColor = new THREE.Color(0.1, 0.1, 0.2);
 const _interpColor = new THREE.Color();
 
-export const DAY_NIGHT_PERIOD = 120; // seconds for full cycle
+export const DAY_NIGHT_PERIOD = 140; // seconds for full cycle
 
 /* ------------------------------------------------------------------ */
 /*  Simplex helpers                                                     */
@@ -609,7 +609,7 @@ export default function GrassBackground({
           height: "100vh",
           zIndex: 2,
           pointerEvents: "none",
-          opacity: 0.5,
+          opacity: 0.125,
         }}
       >
         <div
@@ -621,8 +621,9 @@ export default function GrassBackground({
             pointerEvents: "none",
             width: "100vw",
             height: "100vh",
-            background: "#1f1e1e",
-            opacity: 0.235,
+            background: "#383838",
+            opacity: 0.923,
+            mixBlendMode: "difference",
           }}
         />
       </div>

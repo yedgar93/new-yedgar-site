@@ -76,7 +76,7 @@ export default function Nav() {
         <Link href="/" className="pointer-events-auto">
           <img
             src={shouldUseWhiteLogo ? "/logo-wht.png" : "/logo-blk.png"}
-            alt="Yedgar Logo"
+            alt="Yedgar"
             className={`h-17 md:h-25 mt-1 md:mt-2 object-contain animate-fade-in ${
               isInitialLoad ? "opacity-0" : "opacity-100"
             }`}

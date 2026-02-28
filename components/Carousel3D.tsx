@@ -117,7 +117,7 @@ function Ocean({
     );
 
     // Vertex wave displacement — drives actual geometry height
-    const waveAmp = uniforms.distortionScale.value * 0.38;
+    const waveAmp = uniforms.distortionScale.value * 0.53;
     const pos = geom.attributes.position;
     const time = uniforms.time.value;
     for (let i = 0; i < pos.count; i++) {
@@ -597,7 +597,7 @@ function AnimatedSky() {
     const sunNorm = Math.max(0, Math.min(0.5, (sunY + 10) / 65));
 
     if (lightRef.current) {
-      const baseIntensity = 0.69;
+      const baseIntensity = 0.99;
       const peakIntensity = 1.93;
       const horizonBoost = Math.max(0, Math.sin(t) * 0.15);
       lightRef.current.intensity =
