@@ -71,7 +71,10 @@ export default function Nav() {
       {/* Top logo */}
       <header
         className="fixed top-0 left-0 z-50 w-full flex justify-center py-4 md:py-5 pointer-events-none"
-        style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
+        style={{
+          paddingTop: "max(env(safe-area-inset-top), 1rem)",
+          zIndex: 1000,
+        }}
       >
         <Link href="/" className="pointer-events-auto">
           <img
