@@ -21,7 +21,7 @@ const _dayColor = new THREE.Color(1, 0.78, 0.59);
 const _nightColor = new THREE.Color(0.1, 0.1, 0.2);
 const _interpColor = new THREE.Color();
 
-export const DAY_NIGHT_PERIOD = 140; // seconds for full cycle
+export const DAY_NIGHT_PERIOD = 145; // seconds for full cycle
 
 /* ------------------------------------------------------------------ */
 /*  Simplex helpers                                                     */
@@ -525,7 +525,7 @@ export default function GrassBackground({
       // Update overlay opacity based on sunNorm
       setOverlayOpacity(1 - sunNorm);
       // Set opacity: fully visible at night, fades out during the day
-      const maxOpacity = 0.45;
+      const maxOpacity = 0.44;
       const minOpacity = 0; // Ensure it fades completely out during the day
       const opacity =
         sunNorm < 0.18
@@ -567,7 +567,7 @@ export default function GrassBackground({
           height: "100vh",
           zIndex: 1, // Ensure it is above the grass, sky, and sun but below the nav and page content
           pointerEvents: "none",
-          background: "rgba(0, 0, 139, 1)", // Midnight blue
+          background: "rgba(1, 1, 38, .93)", // Midnight blue
           opacity: midnightOpacity,
           mixBlendMode: "multiply", // Ensure proper blending with the background
           transition: "opacity 0.5s ease-in-out", // Smooth transition for fading
