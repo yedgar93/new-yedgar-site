@@ -405,11 +405,7 @@ function CameraController() {
 
 let _lastSunY = 9999;
 
-function AnimatedEnvironment({
-  materialRef,
-}: {
-  materialRef: React.RefObject<THREE.RawShaderMaterial>;
-}) {
+function AnimatedEnvironment() {
   const skyRef = useRef<any>(null);
   const lightRef = useRef<any>(null);
 
