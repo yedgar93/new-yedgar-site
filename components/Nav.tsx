@@ -54,8 +54,8 @@ export default function Nav() {
     return () => clearInterval(interval);
   }, []);
 
-  const shouldUseWhiteLogo = isHomePage || pathname === "/about";
-  // || pathname === "/music"; // Always use white logo on the music page
+  const shouldUseWhiteLogo =
+    isHomePage || pathname === "/about" || pathname === "/music"; // Always use white logo on the music page
 
   // Fade logo when pathname changes
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function Nav() {
           <img
             src={shouldUseWhiteLogo ? "/logo-wht.png" : "/logo-blk.png"}
             alt="Yedgar"
-            className={`h-17 md:h-25 mt-1 md:mt-2 object-contain animate-fade-in ${
+            className={`h-18 md:h-18 sm:h-20 mt-1 md:mt-2 object-contain animate-fade-in ${
               isInitialLoad ? "opacity-0" : "opacity-100"
             }`}
             style={{

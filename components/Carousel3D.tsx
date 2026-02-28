@@ -117,7 +117,7 @@ function Ocean({
     );
 
     // Vertex wave displacement — drives actual geometry height
-    const waveAmp = uniforms.distortionScale.value * 0.53;
+    const waveAmp = uniforms.distortionScale.value * 0.13;
     const pos = geom.attributes.position;
     const time = uniforms.time.value;
     for (let i = 0; i < pos.count; i++) {
@@ -539,14 +539,25 @@ function CursorSun({
 
   useFrame((state) => {
     if (isMobile) {
-      // On mobile, park the light in front of the active card
+      // On mobile, keep the light fixed in front of the camera
+      // so it consistently illuminates the front-facing cards.
       if (lightRef.current) {
-        const angle = (activeIndex / cardList.length) * Math.PI * 2;
-        lightRef.current.position.set(
-          Math.sin(angle) * 4.9,
-          1,
-          Math.cos(angle) * 4.9 + 1,
-        );
+        // _sunDir will hold camera forward direction (normalized)
+        state.camera.getWorldDirection(_sunDir);
+        const distanceInFront = 2;
+        // reuse _cursorWorldPos as a temp position: camera + forward*distance
+        _cursorWorldPos
+          .copy(state.camera.position)
+          .add(_sunDir.clone().multiplyScalar(distanceInFront));
+        // lift slightly above camera position for nicer lighting
+        _cursorWorldPos.y = state.camera.position.y + 1;
+        lightRef.current.position.copy(_cursorWorldPos);
+      }
+
+      if (waterMeshRef.current?.material?.uniforms?.sunDirection) {
+        // align water sunDirection with camera forward so reflections feel consistent
+        state.camera.getWorldDirection(_sunDir);
+        waterMeshRef.current.material.uniforms.sunDirection.value.copy(_sunDir);
       }
     } else {
       // On desktop, follow the cursor
@@ -559,13 +570,19 @@ function CursorSun({
         const dist = _cursorWorldPos.length();
         if (dist > maxDist) _cursorWorldPos.multiplyScalar(maxDist / dist);
 
+        // Move the sun partway toward the camera so it appears closer to the viewport
+        const followTowardsCamera = 0.2; // 0 -> at hit point, 1 -> at camera
+        const _targetPos = _cursorWorldPos
+          .clone()
+          .lerp(state.camera.position, followTowardsCamera);
+
         if (lightRef.current) {
-          lightRef.current.position.copy(_cursorWorldPos);
+          lightRef.current.position.copy(_targetPos);
           lightRef.current.position.y += 1;
         }
 
         if (waterMeshRef.current?.material?.uniforms?.sunDirection) {
-          _sunDir.copy(_cursorWorldPos).normalize();
+          _sunDir.copy(_targetPos).normalize();
           waterMeshRef.current.material.uniforms.sunDirection.value.copy(
             _sunDir,
           );
@@ -577,10 +594,10 @@ function CursorSun({
   return (
     <pointLight
       ref={lightRef}
-      color={0xffeedd}
-      intensity={10}
-      distance={100}
-      decay={1.6}
+      color={0x4f4f4f}
+      intensity={80}
+      distance={10}
+      decay={0.5}
     />
   );
 }

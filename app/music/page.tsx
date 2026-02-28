@@ -151,15 +151,9 @@ function MusicPageContent() {
 
   const progress = n > 1 ? activeIndex / (n - 1) : 0;
 
-  // Prevent body scroll on this page
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    document.body.style.backgroundColor = "transparent";
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.backgroundColor = "";
-    };
-  }, []);
+  // Previously we forced `overflow: hidden` here which prevents the
+  // native scrollbar from working with the carousel's ScrollControls.
+  // Leave body scroll behavior alone so the page scrollbar remains usable.
 
   return (
     <main
