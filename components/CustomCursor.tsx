@@ -95,7 +95,7 @@ export default function CustomCursor() {
       pos.x += (targetX - pos.x) * (isHovering ? 0.18 : 0.12);
       pos.y += (targetY - pos.y) * (isHovering ? 0.18 : 0.12);
 
-      const size = isHovering ? 40 : 16;
+      const size = isHovering ? 40 : 8;
       cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
       cursor.style.width = `${size}px`;
       cursor.style.height = `${size}px`;
@@ -129,8 +129,8 @@ export default function CustomCursor() {
         position: "fixed",
         top: 0,
         left: 0,
-        width: 16,
-        height: 16,
+        width: 8,
+        height: 8,
         borderRadius: "50%",
         backgroundColor: "rgba(255, 255, 255, 0.9)",
         mixBlendMode: "difference",

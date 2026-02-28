@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { throttle } from "lodash-es"; // Import throttle from lodash-es
+import { DAY_NIGHT_PERIOD } from "./GrassBackground"; // Import the day-night period constant
 
 const links = [
   { href: "/", label: "Home" },
@@ -20,7 +21,7 @@ export default function Nav() {
   const [logoOpacity, setLogoOpacity] = useState(1);
   const [isNight, setIsNight] = useState(false);
   const [logoColor, setLogoColor] = useState("black"); // Default to black
-  const [transitionDuration, setTransitionDuration] = useState("2s");
+  const [transitionDuration, setTransitionDuration] = useState("4s");
 
   useEffect(() => {
     const throttledScroll = throttle(() => {
@@ -39,40 +40,22 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    const handleDayNightCycle = (
-      event: CustomEvent<{ isNight: boolean; sunNorm: number }>,
-    ) => {
-      const { isNight, sunNorm } = event.detail; // Use isNight for logo color
+    const interval = setInterval(() => {
+      const t = (performance.now() / 1000) % DAY_NIGHT_PERIOD; // Simulated time in seconds
+      const sunY = Math.sin((t / DAY_NIGHT_PERIOD) * Math.PI * 2) * 50 + 5; // Simulated sun position
 
-      // Set logo color based on isNight
-      const targetColor = isNight ? "white" : "black";
-      console.log(
-        "Received isNight:",
-        isNight,
-        "Setting logo color to:",
-        targetColor,
-      ); // Debugging log
-      setLogoColor(targetColor);
-    };
+      // Calculate normalized sun position (0 at night, 1 at noon)
+      const sunNorm = Math.max(0, Math.min(1, (sunY + 10) / 65));
 
-    window.addEventListener(
-      "dayNightCycle",
-      handleDayNightCycle as EventListener,
-    );
+      // Determine if it is nighttime
+      setIsNight(sunNorm < 0.18); // Nighttime threshold
+    }, 100);
 
-    return () => {
-      window.removeEventListener(
-        "dayNightCycle",
-        handleDayNightCycle as EventListener,
-      );
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  const shouldUseWhiteLogo =
-    isHomePage ||
-    pathname === "/about" ||
-    // || pathname === "music,"
-    isNight;
+  const shouldUseWhiteLogo = isHomePage || pathname === "/about";
+  // || pathname === "/music"; // Always use white logo on the music page
 
   // Fade logo when pathname changes
   useEffect(() => {
@@ -87,14 +70,14 @@ export default function Nav() {
     <>
       {/* Top logo */}
       <header
-        className="fixed top-0 left-0 z-50 w-full flex justify-center py-4 md:py-6 pointer-events-none"
+        className="fixed top-0 left-0 z-50 w-full flex justify-center py-4 md:py-5 pointer-events-none"
         style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
       >
         <Link href="/" className="pointer-events-auto">
           <img
             src={shouldUseWhiteLogo ? "/logo-wht.png" : "/logo-blk.png"}
             alt="Yedgar Logo"
-            className={`h-14 md:h-22 mt-1 md:mt-2 object-contain animate-fade-in ${
+            className={`h-17 md:h-25 mt-1 md:mt-2 object-contain animate-fade-in ${
               isInitialLoad ? "opacity-0" : "opacity-100"
             }`}
             style={{

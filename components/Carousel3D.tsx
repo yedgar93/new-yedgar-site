@@ -23,7 +23,6 @@ import {
   useScroll,
   Billboard,
   Text,
-  useTexture,
   Sky,
 } from "@react-three/drei";
 import { easing } from "maath";
@@ -42,8 +41,23 @@ declare module "@react-three/fiber" {
 
 const cardList = releases.filter((r) => r.artwork);
 
-// Shared ref so CursorSun can update the water's sunDirection for reflections
 const waterMeshRef: { current: any } = { current: null };
+
+// Module-level — never allocated per-frame
+const _dayColor = new THREE.Color(1, 0.78, 0.59);
+const _nightColor = new THREE.Color(0.1, 0.1, 0.2);
+const _interpColor = new THREE.Color();
+
+const DAY_NIGHT_PERIOD = 60;
+
+// Wave states: calm → big → medium → repeat
+// distortionScale drives how choppy the water looks
+const WAVE_STATES = [
+  { distortionScale: 0.4, duration: 20 }, // calm
+  { distortionScale: 3.5, duration: 30 }, // large waves
+  { distortionScale: 1.5, duration: 20 }, // medium waves
+];
+const WAVE_CYCLE_TOTAL = WAVE_STATES.reduce((a, s) => a + s.duration, 0);
 
 function Ocean({
   waterColor = 0x001e0f,
@@ -60,12 +74,13 @@ function Ocean({
   waterNormals.minFilter = THREE.LinearFilter;
   waterNormals.generateMipmaps = false;
 
-  const geom = useMemo(() => new THREE.PlaneGeometry(2000, 2000, 32, 32), []);
+  // 10x10 is sufficient — Water shader handles wave animation on the GPU
+  const geom = useMemo(() => new THREE.PlaneGeometry(600, 900, 50, 50), []);
 
   const config = useMemo(
     () => ({
-      textureWidth: 128,
-      textureHeight: 128,
+      textureWidth: 464,
+      textureHeight: 464,
       waterNormals,
       sunDirection: new THREE.Vector3(),
       sunColor,
@@ -77,12 +92,50 @@ function Ocean({
   );
 
   useFrame((_state, delta) => {
-    if (ref.current) {
-      ref.current.material.uniforms.time.value += delta * 0.5;
+    if (!ref.current?.material?.uniforms) return;
+    const uniforms = ref.current.material.uniforms;
+
+    // Advance water animation time
+    uniforms.time.value += delta * 0.5;
+
+    // Wave state cycling — lerp distortionScale toward current target
+    const t = uniforms.time.value % WAVE_CYCLE_TOTAL;
+    let accumulated = 0;
+    let target = WAVE_STATES[0].distortionScale;
+    for (const state of WAVE_STATES) {
+      accumulated += state.duration;
+      if (t < accumulated) {
+        target = state.distortionScale;
+        break;
+      }
     }
+    // Smooth transition between states
+    uniforms.distortionScale.value = THREE.MathUtils.lerp(
+      uniforms.distortionScale.value,
+      target,
+      delta * 0.3,
+    );
+
+    // Vertex wave displacement — drives actual geometry height
+    const waveAmp = uniforms.distortionScale.value * 0.38;
+    const pos = geom.attributes.position;
+    const time = uniforms.time.value;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const z =
+        Math.sin(x * 0.04 + time * 1.1) *
+          Math.cos(y * 0.03 + time * 0.7) *
+          waveAmp +
+        Math.sin(x * 0.09 + time * 0.6) *
+          Math.cos(y * 0.07 + time * 1.3) *
+          waveAmp *
+          0.4;
+      pos.setZ(i, z);
+    }
+    pos.needsUpdate = true;
   });
 
-  // Expose water mesh for cursor reflection
   useEffect(() => {
     waterMeshRef.current = ref.current;
     return () => {
@@ -122,61 +175,45 @@ function proxyUrl(url: string) {
   return url;
 }
 
-// Shared across all cards — created once
 const sharedBoxGeometry = new THREE.BoxGeometry(1, 1, 0.01, 1, 1, 1);
 const sharedSideMaterial = new THREE.MeshLambertMaterial({
   color: "#111111",
-  emissive: 0x111111,
+  emissive: 0x555555,
   toneMapped: false,
 });
 
 function CardMesh({
   url,
   onClick,
-  active,
 }: {
   url: string;
   onClick: (e: any) => void;
-  active?: boolean;
 }) {
   const texture = useLoader(THREE.TextureLoader, url, (loader: any) => {
     try {
       loader.crossOrigin = "anonymous";
     } catch (e) {}
   }) as THREE.Texture;
+
   try {
     texture.colorSpace = THREE.SRGBColorSpace;
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
   } catch (e) {}
+
   const faceMaterial = useMemo(() => {
     if (!texture)
       return new THREE.MeshLambertMaterial({
         color: "#333",
         toneMapped: false,
       });
-    return new THREE.MeshLambertMaterial({ map: texture, toneMapped: false });
+    return new THREE.MeshLambertMaterial({
+      map: texture,
+      toneMapped: false,
+      emissive: new THREE.Color(0x020202),
+      emissiveIntensity: 1,
+    });
   }, [texture]);
-
-  const duplicateMaterial = useMemo(() => {
-    if (!texture)
-      return new THREE.MeshBasicMaterial({
-        color: "#333",
-        toneMapped: false,
-      });
-    return new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
-  }, [texture]);
-
-  // Dynamically adjust emissive based on sun cycle
-  // Cards should look natural in daylight and simply darken at night (not grey)
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime * ((Math.PI * 2) / 60);
-    const sunY = Math.sin(t) * 400 + 345; // -55 … 745
-    const sunOut = Math.max(0, Math.min(1, sunY / 100));
-    const e = (active ? 0x1a : 0x10) / 255;
-    faceMaterial.emissive.setRGB(e, e, e);
-    faceMaterial.emissiveIntensity = 0.2 + sunOut * 0.005; // Reduced sunOut impact to half
-    faceMaterial.transparent = true;
-    faceMaterial.opacity = 0.5; // Set original cards to 50% opacity
-  });
 
   const materials = useMemo(
     () => [
@@ -190,29 +227,8 @@ function CardMesh({
     [faceMaterial],
   );
 
-  const duplicateMaterials = useMemo(
-    () => [
-      sharedSideMaterial,
-      sharedSideMaterial,
-      sharedSideMaterial,
-      sharedSideMaterial,
-      duplicateMaterial,
-      duplicateMaterial,
-    ],
-    [duplicateMaterial],
-  );
-
   return (
-    <>
-      {/* Original card affected by lighting */}
-      <mesh
-        geometry={sharedBoxGeometry}
-        material={materials}
-        onClick={onClick}
-      />
-      {/* Duplicate card unaffected by lighting */}
-      <mesh geometry={sharedBoxGeometry} material={duplicateMaterials} />
-    </>
+    <mesh geometry={sharedBoxGeometry} material={materials} onClick={onClick} />
   );
 }
 
@@ -223,7 +239,7 @@ function Card({
   onClick,
   pointerPos,
   angle,
-  cardScale = 1,
+  cardScale = 0.7,
   ...props
 }: {
   url: string;
@@ -239,7 +255,6 @@ function Card({
   onPointerOut: () => void;
 }) {
   const ref = useRef<any>(null!);
-  const { camera, viewport, gl } = useThree();
 
   useFrame((_s, delta) => {
     const f = hovered ? 1.4 : active ? 1.25 : 1;
@@ -251,7 +266,7 @@ function Card({
   return (
     <group {...props}>
       <group ref={ref}>
-        <CardMesh url={url} onClick={onClick} active={active || hovered} />
+        <CardMesh url={url} onClick={onClick} />
       </group>
     </group>
   );
@@ -288,7 +303,6 @@ function LocalActiveCard({
     : "";
   return (
     <Billboard>
-      {/* Outer outline layer (rendered behind) */}
       <Text
         font="/Roboto-Thin.ttf"
         fontSize={isMobile ? 0.28 : 0.3}
@@ -305,7 +319,6 @@ function LocalActiveCard({
       >
         {hovered !== null ? label.toUpperCase() : ""}
       </Text>
-      {/* Main text with inner outline */}
       <Text
         font="/Roboto-Thin.ttf"
         fontSize={isMobile ? 0.28 : 0.3}
@@ -340,7 +353,7 @@ function LocalActiveCard({
 function Cards({
   from = 0,
   len = Math.PI * 2,
-  radius = 4.68,
+  radius = 4.9,
   onPointerOver,
   onPointerOut,
   onCardClick,
@@ -382,7 +395,7 @@ function Cards({
               onCardClick(i);
             }}
             position={[Math.sin(angle) * radius, 0, Math.cos(angle) * radius]}
-            rotation={[0, Math.PI / 2 + angle, 0]}
+            rotation={[0, Math.PI / 120 + angle, 0]}
             active={activeIndex !== undefined ? activeIndex === i : hov === i}
             hovered={hov === i}
             url={proxyUrl(rel.artwork!)}
@@ -396,15 +409,17 @@ function Cards({
   );
 }
 
-function Scene(props: any) {
+const Scene = (props: any) => {
   const router = useRouter();
-
   const ref = useRef<any>(null!);
   const scroll = useScroll();
   const [hovered, setHovered] = useState<number | null>(null);
   const pointerPosRef = useRef({ x: 0, y: 0 });
   const { viewport } = useThree();
   const active = hovered !== null ? (cardList[hovered] ?? null) : null;
+
+  const handlePointerOver = useCallback((i: number) => setHovered(i), []);
+  const handlePointerOut = useCallback(() => setHovered(null), []);
 
   useFrame((state, delta) => {
     ref.current.rotation.y = -scroll.offset * (Math.PI * 2);
@@ -416,7 +431,6 @@ function Scene(props: any) {
       delta,
     );
     state.camera.lookAt(0, 0, 0);
-
     pointerPosRef.current.x = state.pointer.x * viewport.width;
     pointerPosRef.current.y = state.pointer.y * viewport.height;
   });
@@ -424,30 +438,28 @@ function Scene(props: any) {
   return (
     <group ref={ref} {...props}>
       <Cards
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
         from={0}
         len={Math.PI * 2}
-        onPointerOver={setHovered}
-        onPointerOut={() => setHovered(null)}
         onCardClick={(i) => {
           const r = cardList[i];
-          if (r?.id) {
-            router.push(`/music?track=${r.id}&autoplay=true`);
-          }
+          if (r?.id) router.push(`/music?track=${r.id}&autoplay=true`);
         }}
         pointerPos={pointerPosRef.current}
       />
       <LocalActiveCard hovered={hovered} release={active} />
     </group>
   );
-}
+};
 
-function MobileScene({
+const MobileScene = ({
   activeIndex,
   ...props
 }: {
   activeIndex: number;
   position: [number, number, number];
-}) {
+}) => {
   const router = useRouter();
   const ref = useRef<any>(null!);
   const pointerPosRef = useRef({ x: 0, y: 0 });
@@ -455,8 +467,10 @@ function MobileScene({
   const cumulativeRotRef = useRef(0);
   const prevIndexRef = useRef(activeIndex);
 
+  const handlePointerOver = useCallback((_i: number) => {}, []);
+  const handlePointerOut = useCallback(() => {}, []);
+
   useFrame((state, delta) => {
-    // Compute shortest-path rotation delta when index changes
     if (prevIndexRef.current !== activeIndex) {
       const step = (Math.PI * 2) / n;
       let diff = activeIndex - prevIndexRef.current;
@@ -472,7 +486,6 @@ function MobileScene({
       0.4,
       delta,
     );
-
     easing.damp3(state.camera.position, [0, 4.5, 9], 0.3, delta);
     state.camera.lookAt(0, 0, 0);
   });
@@ -480,27 +493,24 @@ function MobileScene({
   const activeRelease = cardList[activeIndex] ?? null;
 
   const handleActiveClick = useCallback(() => {
-    if (activeRelease?.id) {
+    if (activeRelease?.id)
       router.push(`/music?track=${activeRelease.id}&autoplay=true`);
-    }
   }, [activeRelease, router]);
 
   return (
     <group ref={ref} {...props}>
       <Cards
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
         from={0}
         len={Math.PI * 2}
-        onPointerOver={() => {}}
-        onPointerOut={() => {}}
         onCardClick={(i) => {
           const r = cardList[i];
-          if (r?.id) {
-            router.push(`/music?track=${r.id}&autoplay=true`);
-          }
+          if (r?.id) router.push(`/music?track=${r.id}&autoplay=true`);
         }}
         pointerPos={pointerPosRef.current}
         activeIndex={activeIndex}
-        cardScale={0.75}
+        cardScale={0.77}
       />
       <LocalActiveCard
         hovered={activeIndex}
@@ -510,138 +520,115 @@ function MobileScene({
       />
     </group>
   );
-}
+};
 
 const _cursorWorldPos = new THREE.Vector3();
 const _sunDir = new THREE.Vector3();
 const _raycaster = new THREE.Raycaster();
 const _pointerNDC = new THREE.Vector2();
-const _waterPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.75); // card level y=1.75
+const _waterPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.75);
 
-function CursorSun() {
+function CursorSun({
+  isMobile,
+  activeIndex,
+}: {
+  isMobile: boolean;
+  activeIndex: number;
+}) {
   const lightRef = useRef<any>(null);
-  const meshRef = useRef<any>(null);
 
   useFrame((state) => {
-    // Raycast from camera through pointer onto a plane at card height (y=1.75)
-    _pointerNDC.set(state.pointer.x, state.pointer.y);
-    _raycaster.setFromCamera(_pointerNDC, state.camera);
-    const hit = _raycaster.ray.intersectPlane(_waterPlane, _cursorWorldPos);
-
-    if (hit) {
-      // Clamp distance so it doesn't fly off to infinity at shallow angles
-      const maxDist = 50;
-      const dist = _cursorWorldPos.length();
-      if (dist > maxDist) _cursorWorldPos.multiplyScalar(maxDist / dist);
-
+    if (isMobile) {
+      // On mobile, park the light in front of the active card
       if (lightRef.current) {
-        lightRef.current.position.copy(_cursorWorldPos);
-        lightRef.current.position.y += 1; // lift light above cards so it illuminates from above
+        const angle = (activeIndex / cardList.length) * Math.PI * 2;
+        lightRef.current.position.set(
+          Math.sin(angle) * 4.9,
+          1,
+          Math.cos(angle) * 4.9 + 1,
+        );
       }
-      if (meshRef.current) {
-        meshRef.current.position.copy(_cursorWorldPos);
-      }
+    } else {
+      // On desktop, follow the cursor
+      _pointerNDC.set(state.pointer.x, state.pointer.y);
+      _raycaster.setFromCamera(_pointerNDC, state.camera);
+      const hit = _raycaster.ray.intersectPlane(_waterPlane, _cursorWorldPos);
 
-      // Update water sunDirection to point toward cursor for specular reflections
-      if (waterMeshRef.current?.material?.uniforms?.sunDirection) {
-        _sunDir.copy(_cursorWorldPos).normalize();
-        waterMeshRef.current.material.uniforms.sunDirection.value.copy(_sunDir);
+      if (hit) {
+        const maxDist = 50;
+        const dist = _cursorWorldPos.length();
+        if (dist > maxDist) _cursorWorldPos.multiplyScalar(maxDist / dist);
+
+        if (lightRef.current) {
+          lightRef.current.position.copy(_cursorWorldPos);
+          lightRef.current.position.y += 1;
+        }
+
+        if (waterMeshRef.current?.material?.uniforms?.sunDirection) {
+          _sunDir.copy(_cursorWorldPos).normalize();
+          waterMeshRef.current.material.uniforms.sunDirection.value.copy(
+            _sunDir,
+          );
+        }
       }
     }
   });
 
   return (
-    <>
-      <pointLight
-        ref={lightRef}
-        color={0xffeedd}
-        intensity={10}
-        distance={100}
-        decay={1.6}
-      />
-    </>
+    <pointLight
+      ref={lightRef}
+      color={0xffeedd}
+      intensity={10}
+      distance={100}
+      decay={1.6}
+    />
   );
 }
+
+let _lastSunY = 9999;
 
 function AnimatedSky() {
   const skyRef = useRef<any>(null);
   const lightRef = useRef<any>(null);
 
   useFrame(({ clock }) => {
-    // t goes 0→2π over DAY_NIGHT_PERIOD seconds
     const t = clock.elapsedTime * ((Math.PI * 2) / DAY_NIGHT_PERIOD);
-    // sunY: sin curve — positive = day, negative = night
-    // Range: ~-45 to ~55 (centered around 5)
     const sunY = Math.sin(t) * 50 + 5;
-
-    // sunNorm: 0 at night, 1 at noon
-    const sunNorm = Math.max(0, Math.min(0.5, (sunY + 10) / 65)); // Adjusted for smoother transition
-
-    const fadeDuration = 30; // Further increased fade duration for smoother transition
-
-    const isNight = sunY < -10; // Determine if it's night
-    const fadeFactor = isNight
-      ? Math.min(1, Math.max(0, (Math.abs(sunY) - 10) / fadeDuration)) // Gradual fade to night
-      : Math.max(0, Math.min(1, (sunY + 10) / fadeDuration)); // Gradual fade to day
-
-    // Ensure cards are not overly affected by lighting
-    const cardMeshes: THREE.Mesh[] = []; // Replace with actual references to your card meshes
-    cardMeshes.forEach((cardMesh) => {
-      if (cardMesh.material instanceof THREE.MeshStandardMaterial) {
-        const cardBrightness = isNight ? 0.9 : 1; // Increased brightness at night
-        cardMesh.material.emissiveIntensity = cardBrightness; // Adjust emissive intensity directly
-      }
-    });
+    const sunNorm = Math.max(0, Math.min(0.5, (sunY + 10) / 65));
 
     if (lightRef.current) {
-      const baseIntensity = 0.3; // Increased base light intensity at night
-      const peakIntensity = 0.8;
+      const baseIntensity = 0.69;
+      const peakIntensity = 1.93;
       const horizonBoost = Math.max(0, Math.sin(t) * 0.15);
       lightRef.current.intensity =
         baseIntensity +
         sunNorm * (peakIntensity - baseIntensity) +
-        horizonBoost; // Smooth fade-out with light peaking at sunrise
-
-      // Smoothly interpolate light color during transitions
-      const dayColor = new THREE.Color(1, 0.78, 0.59); // Daylight color (RGB normalized)
-      const nightColor = new THREE.Color(0.1, 0.1, 0.2); // Nighttime color (dark blueish)
-      const interpolatedColor = dayColor.lerp(nightColor, 1 - sunNorm); // Interpolate based on sunNorm
-      lightRef.current.color = interpolatedColor;
+        horizonBoost;
+      _interpColor.copy(_dayColor).lerp(_nightColor, 1 - sunNorm);
+      lightRef.current.color.copy(_interpColor);
     }
 
-    // Gradual darkening of the sky at night
+    if (Math.abs(sunY - _lastSunY) < 0.05) return;
+    _lastSunY = sunY;
+
     if (skyRef.current?.material?.uniforms?.rayleigh) {
-      const maxRayleigh = 1.5; // Maximum darkness at night
-      const minRayleigh = 0.5; // Minimum darkness during the day
       skyRef.current.material.uniforms.rayleigh.value =
-        minRayleigh + (1 - sunNorm) * (maxRayleigh - minRayleigh); // Gradual darkening over a few seconds
+        0.5 + (1 - sunNorm) * 1.0;
     }
-
-    // Gradual fade-out of pink in the sky during sunset
     if (skyRef.current?.material?.uniforms?.mieDirectionalG) {
-      const sunsetPink = 0.5; // Intensity of pink during sunset
-      const nightBlue = 0.2; // Intensity of blue at night
       skyRef.current.material.uniforms.mieDirectionalG.value =
-        nightBlue + sunNorm * (sunsetPink - nightBlue); // Gradual fade from pink to blue
+        0.2 + sunNorm * 0.3;
     }
-
-    // Remove color from the sky at night
     if (skyRef.current?.material?.uniforms?.mieCoefficient) {
       skyRef.current.material.uniforms.mieCoefficient.value =
-        0.02 + (1 - sunNorm) * 0.03; // Further increase mieCoefficient to remove color
+        0.02 + (1 - sunNorm) * 0.03;
     }
-
-    // Adjust turbidity: low at noon (blue sky), higher at sunrise/sunset
     if (skyRef.current?.material?.uniforms?.turbidity) {
-      // sunEdge: 1 near horizon, 0 at noon — drives warmer sunset look
       const sunEdge = 1 - Math.min(1, Math.max(0, sunY / 90));
-      // Day: 1.0 (cool blue), Horizon: ~5 (warm haze), Night: ~12
       skyRef.current.material.uniforms.turbidity.value =
-        1.0 + sunEdge * 4 + (1 - sunNorm) * 11; // Increase turbidity at night for a darker sky
+        1.0 + sunEdge * 4 + (1 - sunNorm) * 11;
     }
-
     if (skyRef.current?.material?.uniforms?.sunPosition) {
-      // Update the sun's position dynamically
       const sunX = Math.cos(t) * 500;
       const sunZ = Math.sin(t) * 500;
       skyRef.current.material.uniforms.sunPosition.value.set(sunX, sunY, sunZ);
@@ -663,9 +650,6 @@ function AnimatedSky() {
   );
 }
 
-// Define the DAY_NIGHT_PERIOD constant
-const DAY_NIGHT_PERIOD = 60; // Adjust this value as needed for the day-night cycle duration
-
 export default function Carousel3D() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -674,7 +658,11 @@ export default function Carousel3D() {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    setIsMobile(window.matchMedia("(pointer: coarse)").matches);
+    const mq = window.matchMedia("(pointer: coarse)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
   }, []);
 
   useEffect(() => {
@@ -702,14 +690,10 @@ export default function Carousel3D() {
       const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
       const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
       touchStartRef.current = null;
-
-      // Only trigger if horizontal swipe is dominant and exceeds threshold
       if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
         if (deltaX < 0) {
-          // Swipe left → next card
           setActiveIndex((prev) => (prev + 1) % n);
         } else {
-          // Swipe right → previous card
           setActiveIndex((prev) => (prev - 1 + n) % n);
         }
       }
@@ -733,7 +717,7 @@ export default function Carousel3D() {
       <Canvas
         dpr={
           typeof window !== "undefined" && window.devicePixelRatio > 1.5
-            ? [1, 1.5]
+            ? [1, 1.25]
             : [1, 1]
         }
         frameloop={isVisible ? "always" : "demand"}
@@ -749,12 +733,12 @@ export default function Carousel3D() {
       >
         <Suspense fallback={null}>
           <Ocean
-            waterColor={0x252255}
-            sunColor={0x252255}
-            distortionScale={2.5}
+            waterColor={0x292154}
+            sunColor={0x3a2b69}
+            distortionScale={2.25}
           />
           <AnimatedSky />
-          {!isMobile && <CursorSun />}
+          <CursorSun isMobile={isMobile} activeIndex={activeIndex} />
           {isMobile ? (
             <MobileScene activeIndex={activeIndex} position={[0, 1.75, 0]} />
           ) : (

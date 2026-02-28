@@ -10,7 +10,6 @@ import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
 import { easing } from "maath";
 import { createNoise2D } from "simplex-noise";
-import { position } from "html2canvas/dist/types/css/property-descriptors/position";
 
 /* ------------------------------------------------------------------ */
 /*  Constants — declared at top so nothing references before init      */
@@ -57,7 +56,6 @@ attribute float stretch;
 uniform float time;
 varying vec2 vUv;
 varying float frc;
-varying float vWind;
 
 vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
 vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;}
@@ -98,25 +96,20 @@ vec4 slerp(vec4 v0,vec4 v1,float t){
 }
 
 void main(){
-  frc = position.y / float(${height});
+  frc=position.y/float(${height});
 
-  // Fast per-blade flutter
-  float noise = 1.0 - snoise(vec2(time - offset.x/50.0, time - offset.z/50.0));
+  // Wind sway — done in the shader, zero JS vertex writes needed
+  float noise=1.0-(snoise(vec2((time-offset.x/50.0),(time-offset.z/50.0))));
+  float windSway = sin(time * 2.0 + offset.x * 0.3 + offset.z * 0.3) * 0.1 * frc;
 
-  // Slow gust wave rolling across the field — patches of grass lean together
-  float gust = snoise(vec2(offset.x/30.0 - time*0.18, offset.z/40.0)) * 0.5 + 0.5;
-  vWind = gust;
-
-  // Total sway scales with height so roots stay fixed
-  float sway = (noise * 0.12 + gust * 0.22) * frc;
-
-  vec4 direction = vec4(0.0, halfRootAngleSin, 0.0, halfRootAngleCos);
-  direction = slerp(direction, orientation, frc);
-  vec3 vPosition = vec3(position.x, position.y + position.y*stretch, position.z);
-  vPosition = rotateVectorByQuaternion(vPosition, direction);
-  vPosition = rotateVectorByQuaternion(vPosition, normalize(vec4(sin(sway), 0.0, -sin(sway), cos(sway))));
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(offset + vPosition, 1.0);
+  vec4 direction=vec4(0.0,halfRootAngleSin,0.0,halfRootAngleCos);
+  direction=slerp(direction,orientation,frc);
+  vec3 vPosition=vec3(position.x + windSway, position.y+position.y*stretch, position.z);
+  vPosition=rotateVectorByQuaternion(vPosition,direction);
+  float halfAngle=noise*0.15;
+  vPosition=rotateVectorByQuaternion(vPosition,normalize(vec4(sin(halfAngle),0.0,-sin(halfAngle),cos(halfAngle))));
+  vUv=uv;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(offset+vPosition,1.0);
 }`;
 
 const fragmentSource = `
@@ -125,46 +118,14 @@ uniform sampler2D map;
 uniform sampler2D alphaMap;
 varying vec2 vUv;
 varying float frc;
-varying float vWind;
-uniform vec3 dayColor;
-uniform vec3 nightColor;
-uniform float sunNorm;
 
 void main(){
-  float alpha = texture2D(alphaMap, vUv).r;
-  if(alpha < 0.15) discard;
-
-  vec4 texCol = texture2D(map, vUv);
-
-  // Base grass color lerp: dark root → mid green → dry yellow tip
-  vec3 rootCol  = vec3(0.03, 0.09, 0.02);   // very dark at soil
-  vec3 midCol   = vec3(0.13, 0.42, 0.08);   // healthy mid-blade green
-  vec3 tipCol   = vec3(0.55, 0.52, 0.18);   // slightly dry/yellow tip
-
-  vec3 grassCol = mix(rootCol, midCol, smoothstep(0.0, 0.5, frc));
-  grassCol      = mix(grassCol, tipCol, smoothstep(0.5, 1.0, frc));
-
-  // Blend with diffuse texture
-  vec3 col = mix(grassCol, texCol.rgb, 0.45);
-
-  // Ambient occlusion — darken base independent of texture
-  float ao = smoothstep(0.0, 0.3, frc);
-  col *= 0.4 + 0.6 * ao;
-
-  // Wind-driven tip brightening — blades in a gust catch more light
-  col += vec3(0.04, 0.05, 0.01) * vWind * smoothstep(0.6, 1.0, frc);
-
-  // Simple distance fog — blend to a pale sky color at far blades
-  // frc proxy for depth isn't ideal but vUv.y correlates with world height
-  // Real fog would need camera distance; this is a cheap approximation
-  float fogFactor = smoothstep(0.0, 1.0, vUv.y * 0.3);
-  vec3 fogColor = vec3(0.78, 0.88, 0.95);
-  col = mix(col, fogColor, fogFactor * 0.18);
-
-  // Night blending — darken grass at night
-  col = mix(nightColor, col, sunNorm);
-
-  gl_FragColor = vec4(col, 1.0);
+  float alpha=texture2D(alphaMap,vUv).r;
+  if(alpha<0.15) discard;
+  vec4 col=vec4(texture2D(map,vUv));
+  col=mix(vec4(0.0,0.6,0.0,1.0),col,frc);
+  col=mix(vec4(0.0,0.1,0.0,1.0),col,frc);
+  gl_FragColor=col;
 }`;
 
 /* ------------------------------------------------------------------ */
@@ -314,9 +275,6 @@ const Grass = memo(function Grass() {
       map: { value: texture },
       alphaMap: { value: alphaMap },
       time: { value: 0 },
-      dayColor: { value: _dayColor },
-      nightColor: { value: _nightColor },
-      sunNorm: { value: 1 }, // Default to day
     }),
     [texture, alphaMap],
   );
@@ -405,11 +363,7 @@ function CameraController() {
 
 let _lastSunY = 9999;
 
-function AnimatedEnvironment({
-  materialRef,
-}: {
-  materialRef: React.RefObject<THREE.RawShaderMaterial>;
-}) {
+function AnimatedEnvironment() {
   const skyRef = useRef<any>(null);
   const lightRef = useRef<any>(null);
 
@@ -513,34 +467,6 @@ export default function GrassBackground({
     return () => clearTimeout(t);
   }, []);
 
-  const [overlayOpacity, setOverlayOpacity] = useState(0);
-  const [midnightOpacity, setMidnightOpacity] = useState(0);
-
-  function OverlayController({
-    setOverlayOpacity,
-  }: {
-    setOverlayOpacity: (opacity: number) => void;
-  }) {
-    useFrame(({ clock }) => {
-      const t = clock.elapsedTime * ((Math.PI * 2) / DAY_NIGHT_PERIOD);
-      const sunY = Math.sin(t) * 50 + 5;
-      const sunNorm = Math.max(0, Math.min(1, (sunY + 10) / 65));
-
-      // Update overlay opacity based on sunNorm
-      setOverlayOpacity(1 - sunNorm);
-      // Set opacity: fully visible at night, fades out during the day
-      const maxOpacity = 0.45;
-      const minOpacity = 0; // Ensure it fades completely out during the day
-      const opacity =
-        sunNorm < 0.18
-          ? maxOpacity
-          : Math.max(minOpacity, (1 - sunNorm) * maxOpacity);
-      setMidnightOpacity(opacity);
-    });
-
-    return null;
-  }
-
   return (
     <div
       style={{
@@ -563,22 +489,6 @@ export default function GrassBackground({
       />
 
       <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          zIndex: 1, // Ensure it is above the grass, sky, and sun but below the nav and page content
-          pointerEvents: "none",
-          background: "rgba(0, 0, 139, 1)", // Midnight blue
-          opacity: midnightOpacity,
-          mixBlendMode: "multiply", // Ensure proper blending with the background
-          transition: "opacity 0.5s ease-in-out", // Smooth transition for fading
-        }}
-      />
-
-      <div
         ref={containerRef}
         style={{
           position: "absolute",
@@ -597,38 +507,10 @@ export default function GrassBackground({
         >
           <Suspense fallback={null}>
             <AnimatedEnvironment />
-            <OverlayController setOverlayOpacity={setOverlayOpacity} />
             <CameraController />
             <Grass />
           </Suspense>
         </Canvas>
-      </div>
-
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          zIndex: 2,
-          pointerEvents: "none",
-          opacity: 0.5,
-        }}
-      >
-        <div
-          className="grain"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 2,
-            pointerEvents: "none",
-            width: "100vw",
-            height: "100vh",
-            background: "#1f1e1e",
-            opacity: 0.235,
-          }}
-        />
       </div>
     </div>
   );
