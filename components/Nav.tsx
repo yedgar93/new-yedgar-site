@@ -54,8 +54,8 @@ export default function Nav() {
     return () => clearInterval(interval);
   }, []);
 
-  const shouldUseWhiteLogo =
-    isHomePage || pathname === "/about" || pathname === "/music"; // Always use white logo on the music page
+  const shouldUseWhiteLogo = isHomePage || pathname === "/about";
+  // || pathname === "/music"; // Always use white logo on the music page
 
   // Fade logo when pathname changes
   useEffect(() => {

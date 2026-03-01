@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { useRef, useMemo, memo, Suspense, useState, useEffect } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
+import Clouds from "./Clouds";
 import { easing } from "maath";
 import { createNoise2D } from "simplex-noise";
 import { position } from "html2canvas/dist/types/css/property-descriptors/position";
@@ -525,7 +526,7 @@ export default function GrassBackground({
       // Update overlay opacity based on sunNorm
       setOverlayOpacity(1 - sunNorm);
       // Set opacity: fully visible at night, fades out during the day
-      const maxOpacity = 0.44;
+      const maxOpacity = 0.53;
       const minOpacity = 0; // Ensure it fades completely out during the day
       const opacity =
         sunNorm < 0.18
@@ -593,6 +594,7 @@ export default function GrassBackground({
         >
           <Suspense fallback={null}>
             <AnimatedEnvironment />
+            <Clouds />
             <OverlayController setOverlayOpacity={setOverlayOpacity} />
             <CameraController />
             <Grass />
@@ -622,7 +624,7 @@ export default function GrassBackground({
             width: "100vw",
             height: "100vh",
             background: "#383838",
-            opacity: 0.923,
+            opacity: 0.323,
             mixBlendMode: "difference",
           }}
         />

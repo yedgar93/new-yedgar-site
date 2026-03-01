@@ -95,8 +95,11 @@ function Ocean({
     if (!ref.current?.material?.uniforms) return;
     const uniforms = ref.current.material.uniforms;
 
-    // Advance water animation time
-    uniforms.time.value += delta * 0.5;
+    // Clamp delta to avoid huge jumps when the tab was hidden or the browser throttled timers.
+    const d = Math.min(delta, 1 / 30); // cap at ~33ms
+
+    // Advance water animation time (using clamped delta)
+    uniforms.time.value += d * 0.5;
 
     // Wave state cycling — lerp distortionScale toward current target
     const t = uniforms.time.value % WAVE_CYCLE_TOTAL;
@@ -113,11 +116,11 @@ function Ocean({
     uniforms.distortionScale.value = THREE.MathUtils.lerp(
       uniforms.distortionScale.value,
       target,
-      delta * 0.3,
+      d * 0.3,
     );
 
     // Vertex wave displacement — drives actual geometry height
-    const waveAmp = uniforms.distortionScale.value * 0.13;
+    const waveAmp = uniforms.distortionScale.value * 0.23;
     const pos = geom.attributes.position;
     const time = uniforms.time.value;
     for (let i = 0; i < pos.count; i++) {
