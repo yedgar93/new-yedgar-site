@@ -120,7 +120,7 @@ function Ocean({
     );
 
     // Vertex wave displacement — drives actual geometry height
-    const waveAmp = uniforms.distortionScale.value * 0.23;
+    const waveAmp = uniforms.distortionScale.value * 0.34;
     const pos = geom.attributes.position;
     const time = uniforms.time.value;
     for (let i = 0; i < pos.count; i++) {

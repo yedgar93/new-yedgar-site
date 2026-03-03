@@ -260,6 +260,12 @@ img {
   font-display: swap;
 }
 
+.centermusic {
+  text-shadow: 2px 2px 3px 3px black;
+  /* -webkit-text-stroke-width: 3px; */
+  /* -webkit-text-stroke-color: rgba(67, 67, 67, 0.2); */
+}
+
 /* Text color classes for Nav links */
 .text-fg {
   color: var(--fg);

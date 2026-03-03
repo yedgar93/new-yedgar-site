@@ -168,107 +168,107 @@ function MusicPageContent() {
       >
         <GrassBackground progress={progress} />
       </LazyMount>
-
-      {/* Center release display */}
-      <div className="relative flex flex-col items-center text-center px-4 md:px-6 z-10">
-        {/* Artwork */}
-        {active.artwork && (
-          <div
-            key={`art-${active.id}`}
-            ref={artworkRef}
-            className="w-36 h-36 md:w-56 md:h-56 shadow-lg  mb-4 md:mb-8 flex items-center justify-center"
-            style={{
-              perspective: "800px",
-              pointerEvents: "auto",
-              WebkitTapHighlightColor: "transparent",
-              background: "#000",
-            }}
-          >
-            <img
-              src={active.artwork}
-              alt={active.title}
-              className="w-full h-full object-cover"
+      <div className="grey-bg">
+        {/* Center release display */}
+        <div className="relative flex flex-col items-center text-center px-4 md:px-6 z-10">
+          {/* Artwork */}
+          {active.artwork && (
+            <div
+              key={`art-${active.id}`}
+              ref={artworkRef}
+              className="w-36 h-36 md:w-56 md:h-56 shadow-lg  mb-4 md:mb-8 flex items-center justify-center"
               style={{
-                pointerEvents: "none",
-                userSelect: "none",
-                display: "block",
-                borderRadius: 0,
+                perspective: "800px",
+                pointerEvents: "auto",
+                WebkitTapHighlightColor: "transparent",
+                background: "#000",
               }}
-              draggable={false}
-            />
-          </div>
-        )}
-
-        {/* Release type label */}
-        <p className="text-[10px] tracking-[0.3em] uppercase text-fg-bright text-gray-200 font-mono animate-fade-in delay-1">
-          {active.type} · {active.releaseDate}
-          {active.tracks ? ` · ${active.tracks} tracks` : ""}
-        </p>
-
-        {/* Title — large */}
-        <h1
-          key={active.id}
-          className="mt-2 md:mt-3 text-[clamp(1.5rem,6vw,4.5rem)] font-bold leading-[1.1] tracking-tight text-fg-bright text-gray-300 animate-scale-in"
-        >
-          {active.title}
-        </h1>
-
-        {/* Label */}
-        {active.label && (
-          <p className="lg:mt-4 mt-3 text-[11px] tracking-[0.2em] uppercase text-fg-bright text-gray-300 animate-fade-in delay-2">
-            {active.label}
-          </p>
-        )}
-
-        {/* Streaming links */}
-        <div className="mt-5 md:mt-8 flex items-center gap-4 md:gap-6 animate-scale-in delay-2 text-gray-300 text-fg-bright text-[13px]">
-          {active.spotifyUrl && (
-            <a
-              href={active.spotifyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-fg-bright hover:text-fg"
             >
-              Spotify
-            </a>
-          )}
-          {active.soundcloudUrl && (
-            <a
-              href={active.soundcloudUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-fg-bright hover:text-fg"
-            >
-              SoundCloud
-            </a>
-          )}
-          {active.bandcampUrl && (
-            <a
-              href={active.bandcampUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-fg-bright hover:text-fg"
-            >
-              Bandcamp
-            </a>
-          )}
-        </div>
-
-        {/* Custom SoundCloud Player */}
-        {active.soundcloudUrl && (
-          <div className="mt-4 md:mt-6 w-full max-w-sm md:max-w-md">
-            <LazyMount>
-              <CustomSoundCloudPlayer
-                trackUrl={active.soundcloudUrl}
-                shouldAutoPlay={false}
+              <img
+                src={active.artwork}
+                alt={active.title}
+                className="w-full h-full object-cover"
+                style={{
+                  pointerEvents: "none",
+                  userSelect: "none",
+                  display: "block",
+                  borderRadius: 0,
+                }}
+                draggable={false}
               />
-            </LazyMount>
+            </div>
+          )}
+
+          {/* Release type label */}
+          <p className="text-[12px] tracking-[0.1em] uppercase text-fg-bright text-gray-300 font-mono animate-fade-in delay-1 centermusic text-shadow-xs text-shadow-gray-800 ">
+            {active.type} · {active.releaseDate}
+            {active.tracks ? ` · ${active.tracks} tracks` : ""}
+          </p>
+
+          {/* Title — large */}
+          <h1
+            key={active.id}
+            className="mt-2 md:mt-3 text-[clamp(1.5rem,6vw,4.5rem)] font-bold leading-[1.1] tracking-tight text-fg-bright text-gray-300 animate-scale-in text-shadow-2xs text-shadow-gray-800 centermusic "
+          >
+            {active.title}
+          </h1>
+
+          {/* Label */}
+          {active.label && (
+            <p className="lg:mt-4 mt-3 text-[12px] tracking-[0.2em] uppercase text-fg-bright text-gray-300 animate-fade-in delay-2 centermusic text-shadow-2xs text-shadow-gray-800">
+              {active.label}
+            </p>
+          )}
+
+          {/* Streaming links */}
+          <div className="mt-5 md:mt-8 flex items-center gap-4 md:gap-6 animate-scale-in delay-2 text-gray-300 text-fg-bright text-[13px] centermusic  text-shadow-xs ">
+            {active.spotifyUrl && (
+              <a
+                href={active.spotifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-fg-bright hover:text-fg"
+              >
+                Spotify
+              </a>
+            )}
+            {active.soundcloudUrl && (
+              <a
+                href={active.soundcloudUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-fg-bright hover:text-fg"
+              >
+                SoundCloud
+              </a>
+            )}
+            {active.bandcampUrl && (
+              <a
+                href={active.bandcampUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-fg-bright hover:text-fg"
+              >
+                Bandcamp
+              </a>
+            )}
           </div>
-        )}
 
-        {/* Removed SoundCloud embed */}
+          {/* Custom SoundCloud Player */}
+          {active.soundcloudUrl && (
+            <div className="mt-4 md:mt-6 w-full max-w-sm md:max-w-md">
+              <LazyMount>
+                <CustomSoundCloudPlayer
+                  trackUrl={active.soundcloudUrl}
+                  shouldAutoPlay={false}
+                />
+              </LazyMount>
+            </div>
+          )}
+
+          {/* Removed SoundCloud embed */}
+        </div>
       </div>
-
       {/* Bottom navigation — release thumbnails */}
       <div className="absolute bottom-12 md:bottom-16 left-1/2 -translate-x-1/2 z-10 max-w-[98vw]">
         <div className="flex items-center gap-1.5 md:gap-2 animate-fade-in delay-4 overflow-x-auto pb-2">
@@ -306,7 +306,7 @@ function MusicPageContent() {
 
       {/* Track counter */}
       <div className="absolute top-4 right-4 md:top-6 md:right-6 z-10 animate-fade-in delay-3">
-        <span className="font-mono text-[10px] text-fg tracking-wider">
+        <span className="font-mono text-[10px] text-gray-300 tracking-wider text-shadow-2xs text-shadow-black centermusic">
           {String(activeIndex + 1).padStart(2, "0")} /{" "}
           {String(releases.length).padStart(2, "0")}
         </span>
@@ -321,6 +321,7 @@ function MusicPageContent() {
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
       `}</style>
+      <div></div>
     </main>
   );
 }
