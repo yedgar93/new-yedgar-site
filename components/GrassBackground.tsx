@@ -706,14 +706,13 @@ function Effects() {
   }, [size]);
 
   return (
-    <EffectComposer ref={composerRef} multisampling={0} disableNormalPass>
+    <EffectComposer ref={composerRef} multisampling={0} enableNormalPass={false}>
       <DepthOfField
         focusDistance={focusDistance}
         focalLength={focalLength}
         bokehScale={bokehScale}
         height={size.height}
       />
-      {/* Subtle bloom to add a small glare clamp for very bright highlights */}
       <Bloom
         intensity={0.03}
         kernelSize={4}

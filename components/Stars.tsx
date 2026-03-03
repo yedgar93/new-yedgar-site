@@ -335,7 +335,7 @@ function StarField({
 
 export interface StarsProps {
   /** 0 = full night, 1 = full day — from AnimatedEnvironment */
-  sunNorm: number;
+  sunNorm?: number;
   settings?: StarSettings;
 }
 
