@@ -706,7 +706,11 @@ function Effects() {
   }, [size]);
 
   return (
-    <EffectComposer ref={composerRef} multisampling={0} enableNormalPass={false}>
+    <EffectComposer
+      ref={composerRef}
+      multisampling={0}
+      enableNormalPass={false}
+    >
       <DepthOfField
         focusDistance={focusDistance}
         focalLength={focalLength}
@@ -1050,8 +1054,8 @@ export default function GrassBackground({
           height: "100vh",
           zIndex: 2,
           pointerEvents: "none",
-          background: "#12121275",
-          opacity: 0.85,
+          background:
+            "radial-gradient(ellipse 40% 55% at 50% 42%, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.18) 60%, transparent 100%)",
         }}
       />
     </div>
