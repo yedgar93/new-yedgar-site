@@ -3,34 +3,35 @@ import type { SceneId } from "@/world/store/transition";
 export interface CameraRig {
   position: readonly [number, number, number];
   target: readonly [number, number, number];
-  /** Horizontal field of view in degrees. Vertical FOV is derived from aspect. */
-  fovX: number;
+  /** Vertical field of view in degrees. Matches the original canvases (R3F default 75). */
+  fov: number;
   parallax: readonly [number, number];
   skyLift: number;
   skyLook: number;
 }
 
+/** Resting shots copied from the original ocean carousel and meadow camera. */
 export const RIGS: Record<SceneId, CameraRig> = {
   ocean: {
-    position: [0, 4.15, 8.8],
-    target: [0, 1.05, 0],
-    fovX: 74,
-    parallax: [1.45, 0.34],
-    skyLift: 7.5,
-    skyLook: 52,
+    position: [0, 4.5, 9],
+    target: [0, 0, 0],
+    fov: 75,
+    parallax: [-2, 2],
+    skyLift: 8,
+    skyLook: 46,
   },
   meadow: {
-    position: [3.6, 6.6, 20.5],
-    target: [1.2, 5.4, -8],
-    fovX: 56,
-    parallax: [0.4, 0.14],
-    skyLift: 9,
-    skyLook: 42,
+    position: [4, 8, 25],
+    target: [0, 10, -20],
+    fov: 75,
+    parallax: [0.25, 0.1],
+    skyLift: 10,
+    skyLook: 34,
   },
   plain: {
     position: [0, 14, 18],
     target: [0, 36, -10],
-    fovX: 60,
+    fov: 75,
     parallax: [0, 0],
     skyLift: 0,
     skyLook: 0,

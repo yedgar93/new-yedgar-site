@@ -24,6 +24,30 @@ function mulberry32(seed: number) {
   };
 }
 
+function tuftGeometry() {
+  const geo = new BufferGeometry();
+  const position = new Float32Array(27);
+  const angles = [0, Math.PI / 3, -Math.PI / 3];
+  const corners: Array<[number, number, number]> = [
+    [-0.5, 0, 0],
+    [0.5, 0, 0],
+    [0, 1, 0.08],
+  ];
+  let offset = 0;
+  for (const angle of angles) {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    for (const [x, y, z] of corners) {
+      position[offset++] = x * c - z * s;
+      position[offset++] = y;
+      position[offset++] = x * s + z * c;
+    }
+  }
+  geo.setAttribute("position", new BufferAttribute(position, 3));
+  geo.setIndex([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  return geo;
+}
+
 function bladeGeometry(segments: 1 | 2) {
   const geo = new BufferGeometry();
   const position =
@@ -115,8 +139,8 @@ float vnoise(vec2 p) {
 void main() {
   vec3 N = normalize(vNormal);
   if (!gl_FrontFacing) N = -N;
-  vec3 base = mix(vec3(0.025, 0.055, 0.015), vec3(0.11, 0.34, 0.055), smoothstep(0.0, 0.45, vH));
-  base = mix(base, vec3(0.45, 0.42, 0.16), smoothstep(0.55, 1.0, vH));
+  vec3 base = mix(vec3(0.04, 0.14, 0.025), vec3(0.18, 0.46, 0.07), smoothstep(0.0, 0.5, vH));
+  base = mix(base, vec3(0.55, 0.52, 0.16), smoothstep(0.62, 1.0, vH));
   base *= mix(0.78, 1.25, vSeed);
   base = mix(base, base + vec3(0.08, 0.03, -0.03), vSeed);
   base = mix(base, base * vec3(0.62, 0.72, 0.95), uNight * 0.55);
@@ -193,22 +217,38 @@ export interface GrassChunkMesh {
   count: number;
 }
 
-export function buildGrassChunks(blades: number, radius: number, segments: 1 | 2, heightScale = 1) {
+export function buildGrassChunks(
+  blades: number,
+  radius: number,
+  segments: 1 | 2,
+  heightScale = 1,
+  widthScale = 1,
+  tuft = false,
+) {
   const rng = mulberry32(20260330);
   const chunk = 24;
   const groups = new Map<string, { x: number; z: number; h: number; w: number; seed: number; yaw: number }[]>();
-  const minZ = -radius * 0.9;
-  const maxZ = radius * 0.55;
   for (let i = 0; i < blades; i++) {
-    const x = (rng() * 2 - 1) * radius;
-    const z = minZ + rng() * (maxZ - minZ);
+    const mode = rng();
+    let x: number;
+    let z: number;
+    if (mode < 0.62) {
+      x = -16 + rng() * 36;
+      z = 0 + rng() * 24;
+    } else if (mode < 0.9) {
+      x = -6 + rng() * 26;
+      z = -18 + rng() * 20;
+    } else {
+      x = (rng() * 2 - 1) * radius;
+      z = (rng() * 2 - 1) * radius * 0.75;
+    }
     const key = `${Math.floor(x / chunk)}:${Math.floor(z / chunk)}`;
     const list = groups.get(key);
     const blade = {
       x,
       z,
-      h: (0.9 + rng() * 0.95) * heightScale,
-      w: 0.06 + rng() * 0.08,
+      h: (0.85 + rng() * 1.05) * heightScale,
+      w: (0.055 + rng() * 0.07) * widthScale,
       seed: rng(),
       yaw: rng() * Math.PI * 2,
     };
@@ -245,7 +285,7 @@ export function buildGrassChunks(blades: number, radius: number, segments: 1 | 2
     cz /= count;
     let maxR = 1;
     for (const blade of list) maxR = Math.max(maxR, Math.hypot(blade.x - cx, blade.z - cz));
-    const geometry = bladeGeometry(segments);
+    const geometry = tuft ? tuftGeometry() : bladeGeometry(segments);
     geometry.setAttribute("aSeed", new InstancedBufferAttribute(seeds, 1));
     geometry.setAttribute("aHeight", new InstancedBufferAttribute(heights, 1));
     geometry.setAttribute("aWidth", new InstancedBufferAttribute(widths, 1));

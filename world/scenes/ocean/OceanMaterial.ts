@@ -14,7 +14,7 @@ import type { QualitySettings } from "@/world/quality/tiers";
 
 const WAVELENGTHS = [28, 17, 9.5, 6.2, 39, 13, 4.8, 22];
 const STEEPNESS = [0.28, 0.34, 0.42, 0.5, 0.22, 0.38, 0.55, 0.3];
-const AMPLITUDES = [0.42, 0.24, 0.12, 0.06, 0.3, 0.09, 0.04, 0.16];
+const AMPLITUDES = [0.3, 0.17, 0.08, 0.04, 0.2, 0.06, 0.025, 0.11];
 const DIRS = [
   [1, 0.25],
   [0.35, 1],
@@ -79,14 +79,21 @@ void main() {
 function cheapReflect() {
   return /* glsl */ `
 ${GRADE}
+uniform samplerCube uSkyMap;
+uniform float uHasSkyMap;
 vec3 skyRadiance(vec3 dir, vec3 cam) {
   dir = normalize(dir);
-  float h = clamp(dir.y, 0.0, 1.0);
-  vec3 color = mix(uHorizon, uZenith, pow(h, 0.55));
+  vec3 color;
+  if (uHasSkyMap > 0.5) {
+    color = textureCube(uSkyMap, dir).rgb;
+  } else {
+    float h = clamp(dir.y, 0.0, 1.0);
+    color = mix(uHorizon, uZenith, pow(h, 0.72));
+  }
   float sunDot = max(dot(dir, normalize(uSunDir)), 0.0);
-  color += uSunColor * pow(sunDot, 28.0) * 1.15 * uSunVis;
+  color += vec3(1.0, 0.97, 0.9) * pow(sunDot, 160.0) * 1.6 * uSunVis;
   float moonDot = max(dot(dir, normalize(uMoonDir)), 0.0);
-  color += vec3(0.75, 0.82, 1.0) * pow(moonDot, 36.0) * 1.4 * uNight;
+  color += vec3(0.75, 0.82, 1.0) * pow(moonDot, 80.0) * 1.2 * uNight;
   return color;
 }
 `;
@@ -114,7 +121,7 @@ void main() {
 
   vec3 V = normalize(cameraPosition - vWorld);
   float ndv = max(dot(N, V), 0.0);
-  float fresnel = mix(0.02, 1.0, pow(1.0 - ndv, 4.5));
+  float fresnel = mix(0.03, 0.68, pow(1.0 - ndv, 4.0));
   vec3 R = reflect(-V, N);
   vec3 reflection = skyRadiance(R, cameraPosition);
   ${
@@ -133,8 +140,8 @@ void main() {
       : ""
   }
 
-  vec3 deep = vec3(0.045, 0.035, 0.11);
-  vec3 shallow = vec3(0.16, 0.11, 0.28);
+  vec3 deep = vec3(0.03, 0.07, 0.16);
+  vec3 shallow = vec3(0.08, 0.16, 0.26);
   vec3 water = mix(deep, shallow, pow(1.0 - ndv, 1.6));
   water += uSunColor * smoothstep(0.12, 0.38, vWorld.y) * 0.12 * uSunVis;
   vec3 color = mix(water, reflection, fresnel);
@@ -231,6 +238,8 @@ export function createOceanMaterial(settings: QualitySettings, normalMap: Textur
       uReflection: { value: normalMap },
       uReflMatrix: { value: new Matrix4() },
       uHasReflection: { value: 0 },
+      uSkyMap: worldUniforms.uSkyMap,
+      uHasSkyMap: worldUniforms.uHasSkyMap,
     },
     vertexShader: oceanVertex(waves),
     fragmentShader: oceanFragment(

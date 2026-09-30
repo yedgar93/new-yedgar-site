@@ -9,9 +9,9 @@ import type { QualitySettings } from "@/world/quality/tiers";
 
 export default function MeadowScene({ settings }: { settings: QualitySettings }) {
   useEffect(() => {
-    sceneAtmosphere.fogDensity = 0.012;
-    sceneAtmosphere.exp2Density = 0.009;
-    sceneAtmosphere.cloudCoverage = 0.56;
+    sceneAtmosphere.fogDensity = 0.0018;
+    sceneAtmosphere.exp2Density = 0.0008;
+    sceneAtmosphere.cloudCoverage = 0.42;
     sceneAtmosphere.ground = "#214628";
     document.documentElement.style.setProperty("--ground", sceneAtmosphere.ground);
   }, []);

@@ -92,6 +92,14 @@ function MusicPageContent() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 40% 55% at 50% 42%, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.18) 60%, transparent 100%)",
+        }}
+      />
       <div className="grey-bg">
         <div className="relative flex flex-col items-center text-center px-4 md:px-6 z-10">
           {active.artwork && (

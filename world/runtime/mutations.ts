@@ -79,7 +79,7 @@ export function setUniformTexture(material: ShaderMaterial, name: string, textur
 
 export function publishEnvironment(scene: Scene, texture: Texture | null, day: number) {
   scene.environment = texture;
-  scene.environmentIntensity = 0.55 + day * 0.75;
+  scene.environmentIntensity = 0.9 + day * 0.65;
 }
 
 const waterY = 0;

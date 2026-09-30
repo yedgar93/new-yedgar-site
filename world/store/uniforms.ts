@@ -2,6 +2,7 @@ import {
   Color,
   Vector2,
   Vector3,
+  type Texture,
   type WebGLRenderer,
 } from "three";
 import { worldTime } from "@/world/store/worldTime";
@@ -35,6 +36,8 @@ export const worldUniforms = {
   uCursorOn: { value: 0 },
   uResolution: { value: new Vector2(1, 1) },
   uAspect: { value: 1 },
+  uSkyMap: { value: null as Texture | null },
+  uHasSkyMap: { value: 0 },
 };
 
 export function syncWorldUniforms(gl: WebGLRenderer, width: number, height: number) {

@@ -31,6 +31,7 @@ export function QualityRuntime() {
         return [48, 58];
       }}
       onDecline={() => {
+        if (quality.isLocked()) return;
         const now = performance.now();
         if (boot.current === 0 || now - boot.current < 3000) return;
         const current = quality.getSettings();

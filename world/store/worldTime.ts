@@ -70,8 +70,8 @@ function waveEnergyAt(elapsed: number) {
   return lerp(mid, calm, smoothstep(0, 1, (t - 65) / 5));
 }
 
-const zenithDay: RGB = [0.2, 0.42, 0.78];
-const horizonDay: RGB = [0.66, 0.74, 0.82];
+const zenithDay: RGB = [0.18, 0.46, 0.9];
+const horizonDay: RGB = [0.97, 0.74, 0.55];
 const zenithNight: RGB = [0.006, 0.01, 0.032];
 const horizonNight: RGB = [0.04, 0.045, 0.09];
 const zenithDusk: RGB = [0.16, 0.11, 0.32];
@@ -134,8 +134,8 @@ function recompute() {
   state.horizon = horizon;
   state.fogColor = lerp3(horizon, zenith, 0.12);
   state.sunColor = lerp3([1, 0.7, 0.42], [1, 0.96, 0.88], state.dayFactor);
-  state.ambientSky = lerp3([0.035, 0.045, 0.09], [0.45, 0.52, 0.64], state.dayFactor);
-  state.ambientGround = lerp3([0.02, 0.025, 0.04], [0.18, 0.15, 0.16], state.dayFactor);
+  state.ambientSky = lerp3([0.04, 0.05, 0.1], [0.42, 0.55, 0.72], state.dayFactor);
+  state.ambientGround = lerp3([0.02, 0.028, 0.04], [0.1, 0.16, 0.06], state.dayFactor);
   state.exposure = lerp(0.9, 1.06, state.dayFactor) + state.twilight * 0.12;
   state.waveEnergy = waveEnergyAt(state.elapsed);
   state.windStrength = state.frozen ? 0.9 : 0.82 + 0.18 * Math.sin(state.elapsed * 0.23);

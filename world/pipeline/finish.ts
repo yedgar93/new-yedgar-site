@@ -6,10 +6,10 @@ const FINISH = /* glsl */ `
 {
   vec2 uv = gl_FragCoord.xy / max(uResolution, vec2(1.0));
   vec2 p = (uv - 0.5) * vec2(uAspect, 1.0);
-  float vig = smoothstep(0.95, 0.28, length(p));
-  gl_FragColor.rgb *= mix(0.8, 1.0, vig);
-  float gn = fract(sin(dot(gl_FragCoord.xy + floor(uTime * 18.0), vec2(12.9898, 78.233))) * 43758.5453);
-  gl_FragColor.rgb += (gn - 0.5) * 0.038;
+  float vig = smoothstep(1.2, 0.55, length(p));
+  gl_FragColor.rgb *= mix(0.94, 1.0, vig);
+  float gn = fract(sin(dot(gl_FragCoord.xy + floor(uTime * 12.0), vec2(12.9898, 78.233))) * 43758.5453);
+  gl_FragColor.rgb += (gn - 0.5) * 0.01;
 }
 #endif
 `;

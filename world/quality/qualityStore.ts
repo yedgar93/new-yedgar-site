@@ -11,6 +11,8 @@ interface QualityState {
   settings: QualitySettings;
   renderer: string;
   losses: number;
+  /** True when ?perf= (or the session override) picked the tier. Don't adapt it away. */
+  locked: boolean;
 }
 
 const listeners = new Set<() => void>();
@@ -21,19 +23,27 @@ let state: QualityState = {
   settings: settingsFor("low", false, false),
   renderer: "",
   losses: 0,
+  locked: false,
 };
 
 function emit() {
   listeners.forEach((listener) => listener());
 }
 
-function applyTier(tier: QualityTier, software: boolean, reducedMotion: boolean, renderer: string) {
+function applyTier(
+  tier: QualityTier,
+  software: boolean,
+  reducedMotion: boolean,
+  renderer: string,
+  locked: boolean,
+) {
   state = {
     ...state,
     ready: true,
     tier,
     settings: settingsFor(tier, software, reducedMotion),
     renderer,
+    locked,
   };
   if (typeof document !== "undefined") {
     document.documentElement.dataset.tier = tier;
@@ -74,7 +84,7 @@ export function bootQuality() {
 
   const detected = detectCapabilities();
   const tier = resolveTier(detected, override);
-  applyTier(tier, detected.software, detected.reducedMotion, detected.renderer);
+  applyTier(tier, detected.software, detected.reducedMotion, detected.renderer, override != null && override !== "auto");
 
   if (params.forceNight) worldTime.setFixed(0.02, true);
   else if (params.time != null) worldTime.setFixed(params.time, params.freeze);
@@ -95,7 +105,11 @@ export const quality = {
       listeners.delete(listener);
     };
   },
+  isLocked() {
+    return state.locked;
+  },
   setDpr(next: number) {
+    if (state.locked) return;
     const clamped = Math.min(state.settings.dprMax, Math.max(state.settings.dprMin, next));
     if (Math.abs(clamped - state.settings.dpr) < 0.02) return;
     state = {
@@ -105,6 +119,7 @@ export const quality = {
     emit();
   },
   stepDown(reason: string) {
+    if (state.locked) return;
     const order: QualityTier[] = ["high", "medium", "low"];
     const index = order.indexOf(state.tier);
     if (state.tier === "static" || state.tier === "low" || index === -1) {
@@ -112,7 +127,7 @@ export const quality = {
       return;
     }
     const next = order[index + 1] ?? "low";
-    applyTier(next, state.settings.software, state.settings.reducedMotion, state.renderer);
+    applyTier(next, state.settings.software, state.settings.reducedMotion, state.renderer, state.locked);
     try {
       localStorage.setItem(`yedgar-tier:${state.renderer}`, next);
     } catch {
@@ -124,7 +139,9 @@ export const quality = {
   },
   noteContextLoss() {
     state = { ...state, losses: state.losses + 1 };
-    if (state.losses >= 2) applyTier("static", state.settings.software, state.settings.reducedMotion, state.renderer);
+    if (state.losses >= 2) {
+      applyTier("static", state.settings.software, state.settings.reducedMotion, state.renderer, state.locked);
+    }
     emit();
   },
 };

@@ -46,13 +46,18 @@ float vnoise(vec2 p) {
   );
 }
 void main() {
-  float micro = vnoise(vWorld.xz * 0.35);
-  float clump = vnoise(vWorld.xz * 0.03);
-  vec3 soil = vec3(0.09, 0.07, 0.035);
-  vec3 grass = vec3(0.06, 0.18, 0.045);
-  vec3 col = mix(soil, grass, 0.45 + 0.55 * clump);
-  col *= 0.82 + 0.28 * micro;
-  col = mix(col, col * vec3(0.6, 0.7, 0.9), uNight * 0.5);
+  float fine = hash12(vWorld.xz * 1.7);
+  float streak = hash12(vec2(floor(vWorld.x * 4.0 + vWorld.z * 0.4), floor(vWorld.z * 1.2)));
+  float clump = vnoise(vWorld.xz * 0.04);
+  vec3 deep = vec3(0.035, 0.14, 0.03);
+  vec3 mid = vec3(0.1, 0.34, 0.055);
+  vec3 dry = vec3(0.4, 0.42, 0.1);
+  vec3 col = mix(deep, mid, 0.35 + 0.65 * clump);
+  col = mix(col, dry, smoothstep(0.62, 0.95, fine) * 0.38);
+  col *= 0.78 + 0.38 * streak;
+  float sheen = sin(uTime * 1.2 + vWorld.x * 0.35 + vWorld.z * 0.22) * 0.5 + 0.5;
+  col += vec3(0.035, 0.05, 0.012) * sheen * (1.0 - uNight);
+  col = mix(col, col * vec3(0.55, 0.65, 0.85), uNight * 0.45);
   vec3 N = normalize(vNormal);
   float wrap = clamp((dot(N, normalize(uSunDir)) + 0.45) / 1.45, 0.0, 1.0);
   vec3 hemi = mix(uAmbientGround, uAmbientSky, clamp(N.y * 0.5 + 0.5, 0.0, 1.0));

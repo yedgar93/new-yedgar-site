@@ -23,7 +23,7 @@ export function Sword({ settings }: { settings: QualitySettings }) {
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       materials.forEach((material) => {
         if (!(material instanceof MeshStandardMaterial)) return;
-        material.envMapIntensity = 1.15;
+        material.envMapIntensity = 1.45;
         if (material.emissive.getHex() !== 0) {
           material.emissiveIntensity = Math.max(material.emissiveIntensity, 0.45);
         }

@@ -10,7 +10,6 @@ import {
   MeshLambertMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
-  PlaneGeometry,
   TextureLoader,
 } from "three";
 import type { Release } from "@/types";
@@ -23,9 +22,8 @@ import { interaction } from "@/world/store/interaction";
 import { worldUniforms } from "@/world/store/uniforms";
 
 const RADIUS = 4.9;
-const bodyGeometry = new BoxGeometry(1, 1, 0.06);
-const faceGeometry = new PlaneGeometry(0.9, 0.9);
-const bodyMaterial = new MeshStandardMaterial({ color: "#12121a", roughness: 0.42, metalness: 0.45 });
+const CARD_SCALE = 0.7;
+const bodyGeometry = new BoxGeometry(1, 1, 0.012);
 
 type FaceMaterial = MeshLambertMaterial | MeshStandardMaterial | MeshPhysicalMaterial;
 
@@ -42,6 +40,20 @@ class CardBoundary extends Component<{ fallback: ReactNode; children: ReactNode 
   render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
+}
+
+function createCardMaterials(settings: QualitySettings, color: string) {
+  const face = createFaceMaterial(settings, color);
+  const side = new MeshStandardMaterial({ color: "#14141a", roughness: 0.78, metalness: 0.04 });
+  bindFinish(side, settings.ldrOutput);
+  return [side, side, side, side, face, face] as [
+    MeshStandardMaterial,
+    MeshStandardMaterial,
+    MeshStandardMaterial,
+    MeshStandardMaterial,
+    FaceMaterial,
+    FaceMaterial,
+  ];
 }
 
 function createFaceMaterial(settings: QualitySettings, color: string): FaceMaterial {
@@ -84,17 +96,18 @@ function ArtCard({
 }) {
   const router = useRouter();
   const texture = useLoader(TextureLoader, textureUrl(release.artwork ?? ""));
-  const material = useMemo(
-    () => createFaceMaterial(settings, release.color ?? "#222222"),
+  const materials = useMemo(
+    () => createCardMaterials(settings, release.color ?? "#222222"),
     [settings, release.color],
   );
+  const face = materials[4];
   const inner = useRef<Group>(null);
   const anim = useRef({ scale: 1, lift: 0 });
 
   useLayoutEffect(() => {
     prepareArtTexture(texture, settings.cards.anisotropy);
-    assignArtMap(material, texture);
-  }, [texture, material, settings.cards.anisotropy]);
+    assignArtMap(face, texture);
+  }, [texture, face, settings.cards.anisotropy]);
 
   useLayoutEffect(() => {
     const node = inner.current;
@@ -106,8 +119,11 @@ function ArtCard({
   }, [settings.ocean.reflection]);
 
   useEffect(() => {
-    return () => material.dispose();
-  }, [material]);
+    return () => {
+      face.dispose();
+      materials[0].dispose();
+    };
+  }, [face, materials]);
 
   useFrame((_, dt) => {
     const node = inner.current;
@@ -115,19 +131,22 @@ function ArtCard({
     const hot = interaction.get().hovered === index;
     anim.current.scale = damp(anim.current.scale, hot ? 1.38 : 1, 0.22, dt);
     anim.current.lift = damp(anim.current.lift, hot ? 0.28 : 0, 0.22, dt);
-    node.scale.setScalar(anim.current.scale);
+    node.scale.setScalar(CARD_SCALE * anim.current.scale);
     node.position.y = anim.current.lift;
     const night = worldUniforms.uNight.value;
-    setEmissiveIntensity(material, hot ? 0.42 : 0.08 + night * 0.62);
+    setEmissiveIntensity(face, hot ? 0.35 : 0.06 + night * 0.55);
   });
 
   const angle = (index / artReleases.length) * Math.PI * 2;
   return (
-    <group position={[Math.sin(angle) * RADIUS, 0, Math.cos(angle) * RADIUS]} rotation={[0, angle, 0]}>
+    <group
+      position={[Math.sin(angle) * RADIUS, 0, Math.cos(angle) * RADIUS]}
+      rotation={[0, angle + Math.PI / 120, 0]}
+    >
       <group ref={inner}>
         <mesh
           geometry={bodyGeometry}
-          material={bodyMaterial}
+          material={materials}
           onPointerOver={(event) => {
             event.stopPropagation();
             interaction.setHovered(index);
@@ -141,7 +160,6 @@ function ArtCard({
             router.push(`/music?track=${release.id}&autoplay=true`);
           }}
         />
-        <mesh geometry={faceGeometry} material={material} position={[0, 0, 0.032]} />
       </group>
     </group>
   );
@@ -153,7 +171,7 @@ function FallbackCard({ index, color }: { index: number; color: string }) {
     <mesh
       geometry={bodyGeometry}
       position={[Math.sin(angle) * RADIUS, 0, Math.cos(angle) * RADIUS]}
-      rotation={[0, angle, 0]}
+      rotation={[0, angle + Math.PI / 120, 0]}
     >
       <meshStandardMaterial color={color} roughness={0.6} metalness={0.05} />
     </mesh>
@@ -169,7 +187,7 @@ export function ReleaseRing({ settings }: { settings: QualitySettings }) {
   });
 
   return (
-    <group ref={group} position={[0, 1.42, 0]}>
+    <group ref={group} position={[0, 1.75, 0]}>
       {artReleases.map((release, index) => (
         <CardBoundary
           key={release.id}

@@ -15,12 +15,12 @@ export function CelestialLights() {
     const moonDir = worldUniforms.uMoonDir.value;
     if (sun.current) {
       sun.current.position.set(sunDir.x * 40, Math.max(0.2, sunDir.y) * 40, sunDir.z * 40);
-      sun.current.intensity = 3.4 * worldUniforms.uSunVis.value;
+      sun.current.intensity = 2.6 * worldUniforms.uSunVis.value;
       sun.current.color.copy(worldUniforms.uSunColor.value);
     }
     if (moon.current) {
       moon.current.position.set(moonDir.x * 30, Math.max(0.2, moonDir.y) * 30, moonDir.z * 30);
-      moon.current.intensity = 0.85 * worldUniforms.uNight.value;
+      moon.current.intensity = 1.35 * worldUniforms.uNight.value;
       moon.current.color.copy(worldUniforms.uMoonColor.value);
     }
     if (hemi.current) {

@@ -18,10 +18,10 @@ export const GRADE = /* glsl */ `
 void applyGrade(inout vec3 color) {
   vec2 uv = gl_FragCoord.xy / max(uResolution, vec2(1.0));
   vec2 p = (uv - 0.5) * vec2(uAspect, 1.0);
-  float vig = smoothstep(0.95, 0.28, length(p));
-  color *= mix(0.8, 1.0, vig);
-  float gn = fract(sin(dot(gl_FragCoord.xy + floor(uTime * 18.0), vec2(12.9898, 78.233))) * 43758.5453);
-  color += (gn - 0.5) * 0.038;
+  float vig = smoothstep(1.2, 0.55, length(p));
+  color *= mix(0.94, 1.0, vig);
+  float gn = fract(sin(dot(gl_FragCoord.xy + floor(uTime * 12.0), vec2(12.9898, 78.233))) * 43758.5453);
+  color += (gn - 0.5) * 0.01;
 }
 `;
 
@@ -58,14 +58,14 @@ function cloudBlock(octaves: number) {
       pp = pp * 2.03 + vec2(1.7, 9.2);
       a *= 0.5;
     }
-    float cl = smoothstep(uCloudCoverage, uCloudCoverage + 0.22, n);
+    float cl = smoothstep(uCloudCoverage, uCloudCoverage + 0.18, n);
     float n2 = vnoise(uv + uSunDir.xz * 0.45);
-    float lit = clamp(n2 - n + 0.62, 0.0, 1.0);
-    vec3 cloudCol = mix(vec3(0.22, 0.25, 0.34), vec3(0.97, 0.95, 0.93), lit);
-    cloudCol = mix(cloudCol, uHorizon * 1.35, uTwilight * 0.85);
-    cloudCol = mix(cloudCol, cloudCol * vec3(0.45, 0.5, 0.7), uNight);
-    float fade = smoothstep(0.02, 0.2, dir.y);
-    color = mix(color, cloudCol, cl * 0.92 * fade);
+    float lit = clamp(n2 - n + 0.68, 0.0, 1.0);
+    vec3 cloudCol = mix(vec3(0.62, 0.68, 0.78), vec3(1.0, 0.99, 0.97), lit);
+    cloudCol = mix(cloudCol, uHorizon * 1.15 + vec3(0.15, 0.05, 0.0), uTwilight * 0.55);
+    cloudCol = mix(cloudCol, cloudCol * vec3(0.55, 0.62, 0.85), uNight * 0.75);
+    float fade = smoothstep(0.04, 0.22, dir.y);
+    color = mix(color, cloudCol, cl * 0.95 * fade);
   }
 `;
 }
@@ -116,12 +116,14 @@ export const FOG_FN = /* glsl */ `
 uniform vec3 uFogColor;
 uniform float uFogDensity;
 vec3 applyFog(vec3 color, vec3 worldPos, vec3 camPos) {
-  float dist = length(worldPos - camPos);
-  float f = 1.0 - exp(-dist * uFogDensity);
   vec3 viewDir = normalize(worldPos - camPos);
-  float sun = pow(max(dot(viewDir, normalize(uSunDir)), 0.0), 10.0);
-  vec3 fogCol = mix(uFogColor, uSunColor, sun * 0.28 * uSunVis);
-  return mix(color, fogCol, clamp(f, 0.0, 1.0));
+  float dist = length(worldPos - camPos);
+  float aerial = 1.0 - exp(-dist * uFogDensity);
+  float towardHorizon = smoothstep(0.45, -0.02, viewDir.y);
+  float f = min(aerial * mix(0.2, 1.0, towardHorizon), 0.32);
+  float sun = pow(max(dot(viewDir, normalize(uSunDir)), 0.0), 12.0);
+  vec3 fogCol = mix(uFogColor, uSunColor, sun * 0.22 * uSunVis);
+  return mix(color, fogCol, f);
 }
 `;
 

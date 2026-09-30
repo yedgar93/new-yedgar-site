@@ -11,11 +11,6 @@ import { fitPerspective } from "@/world/runtime/mutations";
 import { interaction } from "@/world/store/interaction";
 import { transition, transitionMotion, type SceneId } from "@/world/store/transition";
 
-function horizontalToVertical(fovX: number, aspect: number) {
-  const radians = (fovX * Math.PI) / 180;
-  return (2 * Math.atan(Math.tan(radians / 2) / Math.max(0.2, aspect)) * 180) / Math.PI;
-}
-
 export function CameraDirector() {
   const camera = useThree((state) => state.camera);
   const size = useThree((state) => state.size);
@@ -73,9 +68,8 @@ export function CameraDirector() {
     const rig = RIGS[transition.get().scene];
     const persp = camera as PerspectiveCamera;
     const aspect = size.width / Math.max(1, size.height);
-    const nextFov = horizontalToVertical(rig.fovX, aspect);
-    if (Math.abs(persp.fov - nextFov) > 0.05 || Math.abs(persp.aspect - aspect) > 0.001) {
-      fitPerspective(persp, nextFov, aspect);
+    if (Math.abs(persp.fov - rig.fov) > 0.05 || Math.abs(persp.aspect - aspect) > 0.001) {
+      fitPerspective(persp, rig.fov, aspect);
     }
     const pointer = interaction.get();
     const pitch = transitionMotion.pitch;

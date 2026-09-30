@@ -9,8 +9,8 @@ import type { QualitySettings } from "@/world/quality/tiers";
 export function Atmosphere({ settings }: { settings: QualitySettings }) {
   const mesh = useRef<Mesh>(null);
   const material = useMemo(
-    () => createSkyMaterial(settings.skyOctaves, settings.ldrOutput),
-    [settings.skyOctaves, settings.ldrOutput],
+    () => createSkyMaterial(settings.skyOctaves, settings.ldrOutput, settings.skyBake),
+    [settings.skyOctaves, settings.ldrOutput, settings.skyBake],
   );
 
   useEffect(() => {

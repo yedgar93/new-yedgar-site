@@ -32,10 +32,16 @@ export interface QualitySettings {
     radius: number;
     segments: 1 | 2;
     height: number;
+    /** Multiplier on blade width. Software uses wide clumps, not hairlines. */
+    width: number;
+    /** Three crossed blades per instance, so a few instances read as tufts. */
+    tuft: boolean;
     alphaToCoverage: boolean;
     cloudShadows: boolean;
   };
   skyOctaves: 2 | 4 | 5;
+  /** Render the sky into a cubemap and sample it, instead of shading clouds per pixel. */
+  skyBake: boolean;
   maxFps: number;
   /** Custom shaders apply AgX + sRGB + grade. Composer tiers leave this to the pipeline. */
   ldrOutput: boolean;
@@ -60,8 +66,18 @@ export function settingsFor(
       envInterval: 60,
       ocean: { waves: 3, segments: 8, foam: false, reflection: false, cloudReflect: false },
       cards: { material: "lambert", anisotropy: 1 },
-      grass: { blades: 0, radius: 1, segments: 1, height: 1, alphaToCoverage: false, cloudShadows: false },
+      grass: {
+        blades: 0,
+        radius: 1,
+        segments: 1,
+        height: 1,
+        width: 1,
+        tuft: false,
+        alphaToCoverage: false,
+        cloudShadows: false,
+      },
       skyOctaves: 2,
+      skyBake: false,
       maxFps: 30,
       ldrOutput: true,
     };
@@ -73,30 +89,33 @@ export function settingsFor(
       tier,
       software,
       reducedMotion,
-      dprMin: potato ? 0.28 : 0.75,
-      dprMax: potato ? 0.5 : 1,
-      dpr: potato ? 0.42 : 1,
+      dprMin: potato ? 0.6 : 0.75,
+      dprMax: potato ? 1 : 1.15,
+      dpr: potato ? 0.8 : 1,
       nativeAntialias: !potato,
       composer: null,
-      envSize: potato ? 32 : 64,
-      envInterval: potato ? 45 : 30,
+      envSize: potato ? 64 : 64,
+      envInterval: potato ? 30 : 30,
       ocean: {
         waves: 3,
-        segments: potato ? 28 : 48,
+        segments: potato ? 36 : 48,
         foam: false,
         reflection: false,
         cloudReflect: false,
       },
-      cards: { material: "lambert", anisotropy: potato ? 2 : 4 },
+      cards: { material: "lambert", anisotropy: potato ? 4 : 4 },
       grass: {
-        blades: potato ? 1000 : 15000,
-        radius: potato ? 22 : 35,
+        blades: potato ? 2400 : 22000,
+        radius: potato ? 42 : 56,
         segments: 1,
-        height: potato ? 0.7 : 1,
+        height: potato ? 1.35 : 1.5,
+        width: potato ? 2.4 : 1.15,
+        tuft: true,
         alphaToCoverage: !potato,
         cloudShadows: false,
       },
       skyOctaves: 2,
+      skyBake: potato,
       maxFps: potato ? 0 : 60,
       ldrOutput: true,
     };
@@ -125,14 +144,17 @@ export function settingsFor(
       ocean: { waves: 5, segments: 80, foam: true, reflection: false, cloudReflect: true },
       cards: { material: "standard", anisotropy: 8 },
       grass: {
-        blades: 36000,
-        radius: 48,
+        blades: 48000,
+        radius: 56,
         segments: 2,
-        height: 1,
+        height: 1.55,
+        width: 1,
+        tuft: false,
         alphaToCoverage: false,
         cloudShadows: true,
       },
       skyOctaves: 4,
+      skyBake: false,
       maxFps: 0,
       ldrOutput: false,
     };
@@ -143,8 +165,8 @@ export function settingsFor(
     software,
     reducedMotion,
     dprMin: 1,
-    dprMax: 1.75,
-    dpr: 1.25,
+    dprMax: 1.5,
+    dpr: 1,
     nativeAntialias: false,
     composer: {
       multisampling: 4,
@@ -153,21 +175,24 @@ export function settingsFor(
       bloomLevels: 6,
       bloomScale: 0.6,
       ao: true,
-      dof: true,
+      dof: false,
     },
     envSize: 256,
     envInterval: 3,
     ocean: { waves: 8, segments: 128, foam: true, reflection: true, cloudReflect: true },
     cards: { material: "physical", anisotropy: 8 },
     grass: {
-      blades: 70000,
+      blades: 85000,
       radius: 64,
       segments: 2,
-      height: 1,
+      height: 1.65,
+      width: 1,
+      tuft: false,
       alphaToCoverage: true,
       cloudShadows: true,
     },
     skyOctaves: 5,
+    skyBake: false,
     maxFps: 0,
     ldrOutput: false,
   };

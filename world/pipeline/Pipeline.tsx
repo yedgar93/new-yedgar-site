@@ -37,29 +37,29 @@ export function Pipeline({ settings }: { settings: QualitySettings }) {
           <N8AO
             halfRes
             quality="performance"
-            aoRadius={1.15}
-            intensity={1.35}
+            aoRadius={0.7}
+            intensity={0.65}
             distanceFalloff={0.6}
           />
         ) : (
           <></>
         )}
         {dof ? (
-          <DepthOfField worldFocusDistance={20} worldFocusRange={9} bokehScale={1.15} />
+          <DepthOfField worldFocusDistance={28} worldFocusRange={18} bokehScale={0.4} />
         ) : (
           <></>
         )}
         <Bloom
           mipmapBlur
-          intensity={0.42}
-          luminanceThreshold={0.78}
-          luminanceSmoothing={0.2}
+          intensity={0.22}
+          luminanceThreshold={0.9}
+          luminanceSmoothing={0.25}
           levels={composer.bloomLevels}
         />
         <ToneMapping mode={ToneMappingMode.AGX} />
         <gradeEffect />
-        <Vignette eskil={false} offset={0.28} darkness={0.72} />
-        <Noise opacity={0.18} />
+        <Vignette eskil={false} offset={0.45} darkness={0.35} />
+        <Noise opacity={0.045} />
         <SMAA />
       </>
     </EffectComposer>
