@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { Canvas } from "@react-three/fiber";
-import { AgXToneMapping, NoToneMapping, SRGBColorSpace } from "three";
+import { AgXToneMapping, NoToneMapping, ReinhardToneMapping, SRGBColorSpace } from "three";
 import { CameraDirector } from "@/world/camera/CameraDirector";
 import { FrameTicker, QualityRuntime } from "@/world/canvas/QualityRuntime";
 import { WorldClock } from "@/world/canvas/WorldClock";
@@ -23,7 +23,11 @@ export default function WorldCanvas({ antialias }: { antialias: boolean }) {
         alpha: false,
         stencil: false,
         powerPreference: "default",
-        toneMapping: settings.composer ? NoToneMapping : AgXToneMapping,
+        toneMapping: settings.composer
+          ? NoToneMapping
+          : settings.software
+            ? ReinhardToneMapping
+            : AgXToneMapping,
         outputColorSpace: SRGBColorSpace,
       }}
       camera={{ fov: 42, near: 0.15, far: 900, position: [0, 4.85, 12.6] }}

@@ -47,10 +47,10 @@ float vnoise(vec2 p) {
 }
 void main() {
   float micro = vnoise(vWorld.xz * 0.35);
-  float patch = vnoise(vWorld.xz * 0.03);
+  float clump = vnoise(vWorld.xz * 0.03);
   vec3 soil = vec3(0.09, 0.07, 0.035);
   vec3 grass = vec3(0.06, 0.18, 0.045);
-  vec3 col = mix(soil, grass, 0.45 + 0.55 * patch);
+  vec3 col = mix(soil, grass, 0.45 + 0.55 * clump);
   col *= 0.82 + 0.28 * micro;
   col = mix(col, col * vec3(0.6, 0.7, 0.9), uNight * 0.5);
   vec3 N = normalize(vNormal);

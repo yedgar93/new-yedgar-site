@@ -1,3 +1,4 @@
+import { perfStats } from "@/world/debug/perfStats";
 import {
   LinearFilter,
   LinearMipmapLinearFilter,
@@ -19,6 +20,18 @@ import {
 } from "three";
 import { transitionMotion } from "@/world/store/transition";
 import { worldTime } from "@/world/store/worldTime";
+
+export function watchRender(gl: WebGLRenderer) {
+  const marked = gl as WebGLRenderer & { __yedgarWatch?: boolean };
+  if (marked.__yedgarWatch) return;
+  marked.__yedgarWatch = true;
+  const original = gl.render.bind(gl);
+  gl.render = (scene: Scene, camera: Parameters<WebGLRenderer["render"]>[1]) => {
+    const start = performance.now();
+    original(scene, camera);
+    perfStats.renderMs = performance.now() - start;
+  };
+}
 
 export function setExposure(gl: WebGLRenderer) {
   gl.toneMappingExposure = worldTime.get().exposure * (1 - transitionMotion.dip * 0.85);

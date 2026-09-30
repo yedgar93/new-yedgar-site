@@ -2,6 +2,7 @@ export const perfStats = {
   ready: false,
   frames: 0,
   ms: 0,
+  renderMs: 0,
   fps: 0,
   tier: "",
   dpr: 1,

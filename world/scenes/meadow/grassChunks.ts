@@ -193,7 +193,7 @@ export interface GrassChunkMesh {
   count: number;
 }
 
-export function buildGrassChunks(blades: number, radius: number, segments: 1 | 2) {
+export function buildGrassChunks(blades: number, radius: number, segments: 1 | 2, heightScale = 1) {
   const rng = mulberry32(20260330);
   const chunk = 24;
   const groups = new Map<string, { x: number; z: number; h: number; w: number; seed: number; yaw: number }[]>();
@@ -207,7 +207,7 @@ export function buildGrassChunks(blades: number, radius: number, segments: 1 | 2
     const blade = {
       x,
       z,
-      h: 0.9 + rng() * 0.95,
+      h: (0.9 + rng() * 0.95) * heightScale,
       w: 0.06 + rng() * 0.08,
       seed: rng(),
       yaw: rng() * Math.PI * 2,

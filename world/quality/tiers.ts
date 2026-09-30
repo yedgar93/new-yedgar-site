@@ -31,6 +31,7 @@ export interface QualitySettings {
     blades: number;
     radius: number;
     segments: 1 | 2;
+    height: number;
     alphaToCoverage: boolean;
     cloudShadows: boolean;
   };
@@ -59,7 +60,7 @@ export function settingsFor(
       envInterval: 60,
       ocean: { waves: 3, segments: 8, foam: false, reflection: false, cloudReflect: false },
       cards: { material: "lambert", anisotropy: 1 },
-      grass: { blades: 0, radius: 1, segments: 1, alphaToCoverage: false, cloudShadows: false },
+      grass: { blades: 0, radius: 1, segments: 1, height: 1, alphaToCoverage: false, cloudShadows: false },
       skyOctaves: 2,
       maxFps: 30,
       ldrOutput: true,
@@ -72,30 +73,31 @@ export function settingsFor(
       tier,
       software,
       reducedMotion,
-      dprMin: potato ? 0.5 : 0.75,
-      dprMax: potato ? 0.72 : 1,
-      dpr: potato ? 0.66 : 1,
+      dprMin: potato ? 0.28 : 0.75,
+      dprMax: potato ? 0.5 : 1,
+      dpr: potato ? 0.42 : 1,
       nativeAntialias: !potato,
       composer: null,
       envSize: potato ? 32 : 64,
       envInterval: potato ? 45 : 30,
       ocean: {
         waves: 3,
-        segments: potato ? 40 : 48,
+        segments: potato ? 28 : 48,
         foam: false,
         reflection: false,
         cloudReflect: false,
       },
       cards: { material: "lambert", anisotropy: potato ? 2 : 4 },
       grass: {
-        blades: potato ? 9000 : 15000,
-        radius: potato ? 28 : 35,
+        blades: potato ? 1000 : 15000,
+        radius: potato ? 22 : 35,
         segments: 1,
+        height: potato ? 0.7 : 1,
         alphaToCoverage: !potato,
         cloudShadows: false,
       },
       skyOctaves: 2,
-      maxFps: potato ? 30 : 60,
+      maxFps: potato ? 0 : 60,
       ldrOutput: true,
     };
   }
@@ -126,6 +128,7 @@ export function settingsFor(
         blades: 36000,
         radius: 48,
         segments: 2,
+        height: 1,
         alphaToCoverage: false,
         cloudShadows: true,
       },
@@ -160,6 +163,7 @@ export function settingsFor(
       blades: 70000,
       radius: 64,
       segments: 2,
+      height: 1,
       alphaToCoverage: true,
       cloudShadows: true,
     },

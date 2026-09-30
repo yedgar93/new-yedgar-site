@@ -12,6 +12,7 @@ export function Grass({ settings }: { settings: QualitySettings }) {
       settings.grass.blades,
       settings.grass.radius,
       settings.grass.segments,
+      settings.grass.height,
     );
     return chunks.map((chunk) => {
       const mesh = new InstancedMesh(chunk.geometry, material, chunk.count);

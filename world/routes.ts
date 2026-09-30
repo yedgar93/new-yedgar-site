@@ -12,9 +12,9 @@ export interface CameraRig {
 
 export const RIGS: Record<SceneId, CameraRig> = {
   ocean: {
-    position: [0, 4.85, 12.6],
-    target: [0, 1.2, 0],
-    fovX: 62,
+    position: [0, 4.15, 8.8],
+    target: [0, 1.05, 0],
+    fovX: 74,
     parallax: [1.45, 0.34],
     skyLift: 7.5,
     skyLook: 52,

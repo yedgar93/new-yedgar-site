@@ -8,13 +8,13 @@ import {
   Vector2,
   type Texture,
 } from "three";
-import { FOG_FN, LDR_EPILOGUE, SKY_UNIFORMS, skyFunction } from "@/world/atmosphere/shaders";
+import { FOG_FN, GRADE, LDR_EPILOGUE, SKY_UNIFORMS, skyFunction } from "@/world/atmosphere/shaders";
 import { worldUniforms } from "@/world/store/uniforms";
 import type { QualitySettings } from "@/world/quality/tiers";
 
 const WAVELENGTHS = [28, 17, 9.5, 6.2, 39, 13, 4.8, 22];
 const STEEPNESS = [0.28, 0.34, 0.42, 0.5, 0.22, 0.38, 0.55, 0.3];
-const AMPLITUDES = [0.22, 0.13, 0.07, 0.04, 0.16, 0.05, 0.025, 0.08];
+const AMPLITUDES = [0.42, 0.24, 0.12, 0.06, 0.3, 0.09, 0.04, 0.16];
 const DIRS = [
   [1, 0.25],
   [0.35, 1],
@@ -76,7 +76,24 @@ void main() {
 `;
 }
 
+function cheapReflect() {
+  return /* glsl */ `
+${GRADE}
+vec3 skyRadiance(vec3 dir, vec3 cam) {
+  dir = normalize(dir);
+  float h = clamp(dir.y, 0.0, 1.0);
+  vec3 color = mix(uHorizon, uZenith, pow(h, 0.55));
+  float sunDot = max(dot(dir, normalize(uSunDir)), 0.0);
+  color += uSunColor * pow(sunDot, 28.0) * 1.15 * uSunVis;
+  float moonDot = max(dot(dir, normalize(uMoonDir)), 0.0);
+  color += vec3(0.75, 0.82, 1.0) * pow(moonDot, 36.0) * 1.4 * uNight;
+  return color;
+}
+`;
+}
+
 function oceanFragment(waves: number, clouds: boolean, foam: boolean, planar: boolean) {
+  const fullReflect = planar || clouds;
   return /* glsl */ `
 varying vec3 vWorld;
 varying vec3 vNormal;
@@ -85,7 +102,7 @@ uniform vec3 uCursor;
 uniform float uCursorOn;
 ${SKY_UNIFORMS}
 ${planar ? "uniform sampler2D uReflection;\nuniform mat4 uReflMatrix;\nuniform float uHasReflection;" : ""}
-${skyFunction(clouds ? 2 : 2, clouds)}
+${fullReflect ? skyFunction(2, clouds) : cheapReflect()}
 ${FOG_FN}
 
 void main() {
