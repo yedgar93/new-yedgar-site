@@ -92,7 +92,9 @@ export function resolveTier(
   if (!detected.webgl2) return "static";
   if (override && override !== "auto") return override;
   if (detected.saveData) return "static";
-  if (detected.software) return "low";
+  // A live scene at a readable resolution does not hold 30fps here. The still
+  // keeps the shot sharp and lets the compositor animate it.
+  if (detected.software) return "static";
   if (detected.cached && detected.cached !== "static") return detected.cached;
 
   const renderer = detected.renderer.toLowerCase();

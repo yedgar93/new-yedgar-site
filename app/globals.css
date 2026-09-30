@@ -362,6 +362,69 @@ html[data-world="1"] .site-nav a {
   pointer-events: none;
 }
 
+.still-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.still-frame {
+  position: absolute;
+  inset: -12px;
+  will-change: transform;
+}
+
+.still-day,
+.still-night {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.still-night {
+  transition: opacity 0.4s linear;
+}
+
+.still-shimmer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 58%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 42%,
+    transparent 58%
+  );
+  background-size: 220% 100%;
+  mix-blend-mode: soft-light;
+  animation: still-shimmer 9s linear infinite;
+}
+
+.still-meadow .still-shimmer {
+  height: 70%;
+  opacity: 0.55;
+  animation-duration: 11s;
+}
+
+.still-stage[data-reduced="1"] .still-shimmer {
+  animation: none;
+}
+
+@keyframes still-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
 .static-ring {
   position: absolute;
   inset: 0;

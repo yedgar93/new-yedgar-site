@@ -29,7 +29,7 @@ export default function OceanScene({ settings }: { settings: QualitySettings }) 
   useEffect(() => {
     sceneAtmosphere.fogDensity = 0.0015;
     sceneAtmosphere.exp2Density = 0.0007;
-    sceneAtmosphere.cloudCoverage = 0.58;
+    sceneAtmosphere.cloudCoverage = 0.74;
     sceneAtmosphere.ground = "#241c3d";
     document.documentElement.style.setProperty("--ground", sceneAtmosphere.ground);
     return () => {

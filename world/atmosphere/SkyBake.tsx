@@ -12,7 +12,7 @@ export function SkyBake({ enabled }: { enabled: boolean }) {
   const gl = useThree((state) => state.gl);
   const bake = useMemo(() => {
     const skyScene = new Scene();
-    const material = createSkyMaterial(4, false, false);
+    const material = createSkyMaterial(4, false, false, true, false);
     const geometry = new SphereGeometry(30, 24, 16);
     const mesh = new Mesh(geometry, material);
     mesh.frustumCulled = false;

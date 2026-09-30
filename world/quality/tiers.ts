@@ -91,7 +91,7 @@ export function settingsFor(
       reducedMotion,
       dprMin: potato ? 0.6 : 0.75,
       dprMax: potato ? 1 : 1.15,
-      dpr: potato ? 0.8 : 1,
+      dpr: potato ? 1 : 1,
       nativeAntialias: !potato,
       composer: null,
       envSize: potato ? 64 : 64,

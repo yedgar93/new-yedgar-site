@@ -3,7 +3,7 @@ import {
   ShaderMaterial,
   type ShaderMaterialParameters,
 } from "three";
-import { GRADE, LDR_EPILOGUE, SKY_UNIFORMS, skyFunction } from "@/world/atmosphere/shaders";
+import { SKY_UNIFORMS, skyFunction } from "@/world/atmosphere/shaders";
 import { worldUniforms } from "@/world/store/uniforms";
 
 const skyVertex = /* glsl */ `
@@ -16,41 +16,47 @@ void main() {
 }
 `;
 
-function skyFragment(octaves: number, baked: boolean) {
+function skyFragment(octaves: number, baked: boolean, omitSun: boolean, encode: boolean) {
+  const tail = encode ? "#include <colorspace_fragment>" : "";
   if (baked) {
     return /* glsl */ `
 varying vec3 vDir;
 ${SKY_UNIFORMS}
 uniform samplerCube uSkyMap;
 uniform float uHasSkyMap;
-${GRADE}
 void main() {
   vec3 dir = normalize(vDir);
   vec3 color = uHasSkyMap > 0.5
     ? textureCube(uSkyMap, dir).rgb
-    : mix(uHorizon, uZenith, pow(clamp(dir.y, 0.0, 1.0), 0.72));
+    : mix(uHorizon, uZenith, pow(1.0 - clamp(dir.y, 0.0, 1.0), 5.0));
   float sunDot = dot(dir, normalize(uSunDir));
-  color += vec3(1.0, 0.97, 0.92) * smoothstep(0.99955, 0.99988, sunDot) * 5.0 * uSunVis;
+  color += vec3(1.0, 0.97, 0.92) * smoothstep(0.9996, 0.9999, sunDot) * 1.4 * uSunVis;
   float moonDot = dot(dir, normalize(uMoonDir));
-  color += vec3(0.8, 0.86, 1.0) * smoothstep(0.9995, 0.99984, moonDot) * 2.2 * uNight;
-  gl_FragColor = vec4(color, 1.0);
-  ${LDR_EPILOGUE}
+  color += vec3(0.8, 0.86, 1.0) * smoothstep(0.9995, 0.99984, moonDot) * 1.1 * uNight;
+  gl_FragColor = vec4(max(color, vec3(0.0)), 1.0);
+  ${tail}
 }
 `;
   }
   return /* glsl */ `
 varying vec3 vDir;
 ${SKY_UNIFORMS}
-${skyFunction(octaves, true)}
+${skyFunction(octaves, true, !omitSun)}
 void main() {
   vec3 color = skyRadiance(vDir, cameraPosition);
-  gl_FragColor = vec4(color, 1.0);
-  ${LDR_EPILOGUE}
+  gl_FragColor = vec4(max(color, vec3(0.0)), 1.0);
+  ${tail}
 }
 `;
 }
 
-export function createSkyMaterial(octaves: number, ldr: boolean, baked = false) {
+export function createSkyMaterial(
+  octaves: number,
+  ldr: boolean,
+  baked = false,
+  omitSun = false,
+  encode = true,
+) {
   const defines: Record<string, number> = {};
   if (ldr) defines.LDR_OUTPUT = 1;
   const parameters: ShaderMaterialParameters = {
@@ -74,7 +80,7 @@ export function createSkyMaterial(octaves: number, ldr: boolean, baked = false) 
       uHasSkyMap: worldUniforms.uHasSkyMap,
     },
     vertexShader: skyVertex,
-    fragmentShader: skyFragment(octaves, baked),
+    fragmentShader: skyFragment(octaves, baked, omitSun, encode),
     side: BackSide,
     depthWrite: false,
     depthTest: true,

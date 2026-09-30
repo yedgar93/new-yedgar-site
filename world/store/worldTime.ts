@@ -70,8 +70,8 @@ function waveEnergyAt(elapsed: number) {
   return lerp(mid, calm, smoothstep(0, 1, (t - 65) / 5));
 }
 
-const zenithDay: RGB = [0.18, 0.46, 0.9];
-const horizonDay: RGB = [0.97, 0.74, 0.55];
+const zenithDay: RGB = [0.34, 0.62, 0.95];
+const horizonDay: RGB = [0.86, 0.62, 0.42];
 const zenithNight: RGB = [0.006, 0.01, 0.032];
 const horizonNight: RGB = [0.04, 0.045, 0.09];
 const zenithDusk: RGB = [0.16, 0.11, 0.32];

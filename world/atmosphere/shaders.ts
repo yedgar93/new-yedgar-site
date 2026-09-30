@@ -65,32 +65,33 @@ function cloudBlock(octaves: number) {
     cloudCol = mix(cloudCol, uHorizon * 1.15 + vec3(0.15, 0.05, 0.0), uTwilight * 0.55);
     cloudCol = mix(cloudCol, cloudCol * vec3(0.55, 0.62, 0.85), uNight * 0.75);
     float fade = smoothstep(0.04, 0.22, dir.y);
-    color = mix(color, cloudCol, cl * 0.95 * fade);
+    color = mix(color, cloudCol, cl * 0.8 * fade);
   }
 `;
 }
 
-export function skyFunction(octaves: number, clouds: boolean) {
+export function skyFunction(octaves: number, clouds: boolean, sun = true) {
   return /* glsl */ `
 ${NOISE}
 vec3 skyRadiance(vec3 dir, vec3 cam) {
   dir = normalize(dir);
   float h = clamp(dir.y, -0.05, 1.0);
-  float skyGrad = pow(1.0 - max(h, 0.0), 1.55);
+  float elev = max(h, 0.0);
+  float skyGrad = pow(1.0 - elev, 5.0);
   vec3 color = mix(uZenith, uHorizon, skyGrad);
   float below = smoothstep(0.02, -0.08, dir.y);
   color = mix(color, uHorizon * 0.72, below);
 
   float sunDot = dot(dir, normalize(uSunDir));
   float sunDisc = smoothstep(0.99955, 0.99986, sunDot);
-  float sunGlow = pow(max(sunDot, 0.0), 14.0);
-  color += vec3(1.0, 0.96, 0.9) * sunDisc * 7.0 * uSunVis;
-  color += uSunColor * sunGlow * 0.55 * uSunVis;
+  float sunGlow = pow(max(sunDot, 0.0), 48.0);
+  ${sun ? "color += vec3(1.0, 0.97, 0.9) * sunDisc * 3.2 * uSunVis;" : ""}
+  ${sun ? "color += uSunColor * sunGlow * 0.22 * uSunVis;" : ""}
 
   float moonDot = dot(dir, normalize(uMoonDir));
   float moonDisc = smoothstep(0.9995, 0.99982, moonDot);
-  float moonHalo = pow(max(moonDot, 0.0), 48.0);
-  color += vec3(0.78, 0.84, 1.0) * (moonDisc * 2.6 + moonHalo * 0.35) * uNight;
+  float moonHalo = pow(max(moonDot, 0.0), 64.0);
+  ${sun ? "color += vec3(0.78, 0.84, 1.0) * (moonDisc * 1.8 + moonHalo * 0.2) * uNight;" : ""}
 
   vec3 starDir = dir;
   float cs = cos(uStarRot);
