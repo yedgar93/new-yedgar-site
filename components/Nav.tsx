@@ -2,12 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { throttle } from "lodash-es";
-import { DAY_NIGHT_PERIOD, TWO_PI_OVER_DAY_NIGHT } from "./GrassBackground";
-import { useContext } from "react";
-import { SunContext } from "./SunContext";
-import { defaultStarSettings } from "./Stars";
 
 const links = [
   { href: "/", label: "Home" },
@@ -19,60 +13,10 @@ const links = [
 
 export default function Nav() {
   const pathname = usePathname();
-  const isHomePage = pathname === "/";
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [logoOpacity, setLogoOpacity] = useState(1);
-  const [isNight, setIsNight] = useState(false);
-  const [logoColor, setLogoColor] = useState("black");
-  const [transitionDuration, setTransitionDuration] = useState("4s");
-  const { sunNorm } = useContext(SunContext);
-
-  useEffect(() => {
-    const throttledScroll = throttle(() => {
-      // Scroll logic here
-    }, 100);
-
-    window.addEventListener("scroll", throttledScroll);
-    const timer = setTimeout(() => setIsInitialLoad(false), 0);
-
-    return () => {
-      window.removeEventListener("scroll", throttledScroll);
-      clearTimeout(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    setIsNight(sunNorm < 0.18);
-  }, [sunNorm]);
-
-  // White logo when: on a page that always uses white, OR it's night
-  const pathAlwaysWhite = isHomePage || pathname === "/about";
-  const shouldUseWhiteLogo = pathAlwaysWhite || isNight;
-
-  // Fade logo out/in whenever the logo image needs to swap
-  // keep initial load fade behavior
-  useEffect(() => {
-    setLogoOpacity(0);
-    const timer = setTimeout(() => setLogoOpacity(1), 300);
-    return () => clearTimeout(timer);
-  }, [shouldUseWhiteLogo]);
-
-  // Compute smooth crossfade factor matching grass/star fade thresholds
-  const fadeLow = defaultStarSettings.fadeLow; // ~0.19
-  const fadeHigh = defaultStarSettings.fadeHigh; // ~0.4
-  const smoothstep = (x: number, a: number, b: number) => {
-    if (x <= a) return 0;
-    if (x >= b) return 1;
-    return (x - a) / (b - a);
-  };
-  // t = 0 at night, 1 at day — we want whiteOpacity = 1 - t
-  const t = smoothstep(sunNorm, fadeLow, fadeHigh);
-  const whiteOpacity = 1 - t;
-  const blackOpacity = t;
+  const mode = pathname === "/" || pathname === "/about" ? "white" : pathname === "/music" ? "world" : "black";
 
   return (
     <>
-      {/* Top logo */}
       <header
         className="fixed top-0 left-0 z-50 w-full flex justify-center py-4 md:py-5 pointer-events-none"
         style={{
@@ -81,24 +25,17 @@ export default function Nav() {
         }}
       >
         <Link href="/" className="pointer-events-auto">
-          <img
-            src={shouldUseWhiteLogo ? "/logo-wht.png" : "/logo-blk.png"}
-            alt="Yedgar"
-            className={`h-18 md:h-18 sm:h-20 mt-1 md:mt-2 object-contain animate-fade-in ${
-              isInitialLoad ? "opacity-0" : "opacity-100"
-            }`}
-            style={{
-              opacity: logoOpacity * (shouldUseWhiteLogo ? whiteOpacity : blackOpacity),
-              transition: `opacity ${transitionDuration} ease`,
-              color: logoColor,
-            }}
-          />
+          <span className={`logo-stack logo-mode-${mode}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-blk.png" alt="" className="logo-img logo-blk" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-wht.png" alt="Yedgar" className="logo-img logo-wht" />
+          </span>
         </Link>
       </header>
 
-      {/* Bottom navigation */}
       <nav
-        className="fixed bottom-0 left-0 z-50 w-full flex justify-center pb-5 md:pb-8 pointer-events-none"
+        className="site-nav fixed bottom-0 left-0 z-50 w-full flex justify-center pb-5 md:pb-8 pointer-events-none"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1.25rem)" }}
       >
         <div className="flex items-center gap-4 md:gap-8 pointer-events-auto animate-fade-in delay-4">
