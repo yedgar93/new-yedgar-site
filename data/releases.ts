@@ -2,7 +2,35 @@ import { Release } from "@/types";
 
 export const releases: Release[] = [
   {
+    id: "counterspell",
+    title: "Counterspell",
+    type: "Album",
+    releaseDate: "2026",
+    label: "Mana Regen",
     featured: true,
+    tracks: 11,
+    artwork: "https://f4.bcbits.com/img/a3955115853_1x1_700.avif",
+    // spotifyUrl: "https://open.spotify.com/artist/0YB8v04fVMgWFl9Nqdrqna",
+    soundcloudUrl: "https://soundcloud.com/yedgar/sets/counterspell",
+    bandcampUrl: "https://yedgar.bandcamp.com/album/counterspell",
+    color: "#6B4C9A",
+  },
+  {
+    id: "waste-my-time",
+    title: "Waste My Time",
+    type: "Single",
+    releaseDate: "2026",
+    label: "NeonBody",
+
+    artwork: "https://f4.bcbits.com/img/a1232221824_1x1_700.avif",
+    spotifyUrl:
+      "https://open.spotify.com/track/3wpwOKVRfNf8yn3eEXXlZ4?si=28967c3e9fc84d1b",
+    soundcloudUrl:
+      "https://soundcloud.com/neonbodyonline/yedgar-waste-my-time-neonbody",
+    bandcampUrl: "https://neonbodyonline.bandcamp.com/track/waste-my-time",
+    color: "#6B4C9A",
+  },
+  {
     id: "change-the-world",
     title: "Change The World",
     type: "Single",

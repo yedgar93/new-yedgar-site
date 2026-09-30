@@ -17,8 +17,6 @@ export default function CustomCursor() {
     }
 
     const mouse = { x: -200, y: -200 };
-    const pos = { x: -200, y: -200 };
-    let attractTarget: { x: number; y: number } | null = null;
     let isHovering = false;
     let isMouseActive = true;
     let currentOpacity = 0.9;
@@ -46,11 +44,6 @@ export default function CustomCursor() {
         "a, button, [role='button'], input[type='submit'], label[for]",
       );
       if (!el) return;
-      const rect = el.getBoundingClientRect();
-      attractTarget = {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-      };
       isHovering = true;
     };
 
@@ -61,7 +54,6 @@ export default function CustomCursor() {
       if (!el) return;
       const related = e.relatedTarget as HTMLElement | null;
       if (related && el.contains(related)) return;
-      attractTarget = null;
       isHovering = false;
     };
 
@@ -85,18 +77,8 @@ export default function CustomCursor() {
       currentOpacity += (targetOpacity - currentOpacity) * 0.15;
       cursor.style.opacity = String(currentOpacity);
 
-      const targetX = attractTarget
-        ? mouse.x + (attractTarget.x - mouse.x) * 0.85
-        : mouse.x;
-      const targetY = attractTarget
-        ? mouse.y + (attractTarget.y - mouse.y) * 0.85
-        : mouse.y;
-
-      pos.x += (targetX - pos.x) * (isHovering ? 0.18 : 0.12);
-      pos.y += (targetY - pos.y) * (isHovering ? 0.18 : 0.12);
-
       const size = isHovering ? 40 : 8;
-      cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+      cursor.style.transform = `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
       cursor.style.width = `${size}px`;
       cursor.style.height = `${size}px`;
 
