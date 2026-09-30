@@ -6,14 +6,15 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Missing url parameter", { status: 400 });
   }
 
-  // Only allow bcbits.com images
-  if (!url.startsWith("https://f4.bcbits.com/")) {
+  const allowed =
+    url.startsWith("https://f4.bcbits.com/") || url.startsWith("https://i1.sndcdn.com/");
+  if (!allowed) {
     return new NextResponse("Forbidden domain", { status: 403 });
   }
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // Set timeout to 5 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId); // Clear timeout if fetch succeeds

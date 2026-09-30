@@ -150,16 +150,7 @@ body {
   animation-delay: 0.9s;
 }
 
-/* Subtle grain overlay */
-.grain::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-}
+/* Grain is applied in the world shaders, not as a DOM overlay. */
 
 /* Smooth link underlines */
 .link-underline {
@@ -252,14 +243,6 @@ img {
   pointer-events: none;
 }
 
-@font-face {
-  font-family: "Witchery Gothic";
-  src: url("/public/WitcheryGothic.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 .centermusic {
   text-shadow: 2px 2px 3px 3px black;
   /* -webkit-text-stroke-width: 3px; */
@@ -282,4 +265,210 @@ img {
 /* Active link indicator */
 .bg-fg {
   background-color: var(--fg);
+}
+
+:root {
+  --logo-white: 0;
+  --sky-top: #8fb4e0;
+  --sky-horizon: #d7c8b4;
+  --ground: #241c3d;
+  --day: 1;
+}
+
+html[data-world="1"],
+html[data-world="1"] body {
+  overflow: hidden;
+  height: 100dvh;
+  touch-action: none;
+}
+
+.world-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.world-stage[data-active="0"] {
+  display: none;
+}
+
+.world-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.world-backdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--sky-top) 0%,
+    var(--sky-horizon) 58%,
+    var(--ground) 100%
+  );
+}
+
+.page-layer {
+  position: relative;
+  z-index: 10;
+  min-height: 100dvh;
+  pointer-events: none;
+}
+
+.page-layer main {
+  pointer-events: auto;
+}
+
+html[data-world="1"] .site-nav a {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.logo-stack {
+  position: relative;
+  display: inline-grid;
+  line-height: 0;
+}
+
+.logo-stack .logo-img {
+  grid-area: 1 / 1;
+  height: 4.6rem;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.logo-mode-white .logo-wht { opacity: 1; }
+.logo-mode-white .logo-blk { opacity: 0; }
+.logo-mode-black .logo-wht { opacity: 0; }
+.logo-mode-black .logo-blk { opacity: 1; }
+.logo-mode-world .logo-wht { opacity: var(--logo-white); }
+.logo-mode-world .logo-blk { opacity: calc(1 - var(--logo-white)); }
+
+.art-tilt {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease;
+  pointer-events: auto;
+}
+
+.art-glare {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.still-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.still-frame {
+  position: absolute;
+  inset: -12px;
+  will-change: transform;
+}
+
+.still-day,
+.still-night {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.still-night {
+  transition: opacity 0.4s linear;
+}
+
+.still-shimmer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 58%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 42%,
+    transparent 58%
+  );
+  background-size: 220% 100%;
+  mix-blend-mode: soft-light;
+  animation: still-shimmer 9s linear infinite;
+}
+
+.still-meadow .still-shimmer {
+  height: 70%;
+  opacity: 0.55;
+  animation-duration: 11s;
+}
+
+.still-stage[data-reduced="1"] .still-shimmer {
+  animation: none;
+}
+
+@keyframes still-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.static-ring {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  perspective: 900px;
+  pointer-events: none;
+}
+
+.static-ring-tilt {
+  position: relative;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(68deg);
+}
+
+.static-ring a {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  margin-left: -36px;
+  margin-top: -36px;
+  pointer-events: auto;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.static-ring img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.debug-hud {
+  position: fixed;
+  left: 8px;
+  bottom: 8px;
+  z-index: 80;
+  max-width: 90vw;
+  padding: 6px 8px;
+  font: 11px/1.4 ui-monospace, monospace;
+  color: #f4f4f4;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
 }

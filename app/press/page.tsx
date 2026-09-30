@@ -1,24 +1,11 @@
-"use client";
-
-import LazyMount from "@/components/LazyMount";
-import { siteMetadata } from "@/data/metadata";
-
 export default function PressPage() {
   return (
     <main className="view-full animate-fade-in light-page">
-      <LazyMount
-        placeholder={<div className="canvas-placeholder fluid-placeholder" />}
-      >
-        <div /> {/* Placeholder child to satisfy Props interface */}
-      </LazyMount>
-
       <div className="max-w-2xl px-4 md:px-6 text-center">
-        {/* Small label */}
         <p className="text-[10px] tracking-[0.3em] uppercase text-fg-dim font-mono animate-fade-in delay-1 mb-8 md:mb-12">
           Press
         </p>
 
-        {/* Press Links */}
         <ul className="text-sm md:text-md font-light leading-relaxed tracking-tight text-fg animate-fade-up delay-2 space-y-4 md:space-y-5 flex flex-col items-center">
           <li className="text-center">
             <a
@@ -27,8 +14,7 @@ export default function PressPage() {
               rel="noopener noreferrer"
               className="text-gray-700 hover:underline"
             >
-              FUXWITHIT.COM - Listen To wavemob's New Release 'Don't Look Back'
-              By Yedgar
+              {`FUXWITHIT.COM - Listen To wavemob's New Release 'Don't Look Back' By Yedgar`}
             </a>
           </li>
           <li className="text-center">
@@ -74,8 +60,6 @@ export default function PressPage() {
             </a>
           </li>
         </ul>
-
-        {/* Social links */}
       </div>
     </main>
   );
